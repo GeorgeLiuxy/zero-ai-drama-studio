@@ -345,6 +345,21 @@ class TestKlingSpec:
         }
 
 
+@pytest.mark.parametrize(("media_type", "model"), [("text", "account-model"), ("image", "gpt-image-2")])
+def test_codex_spec_constructs_subscription_backend_without_api_credentials(media_type: str, model: str):
+    from lib.image_backends.codex import CodexImageBackend
+    from lib.text_backends.codex import CodexTextBackend
+
+    backend = get_provider_spec("codex", media_type).build_backend(
+        _loaded(credentials={"api_key": "ignored-key", "base_url": "https://ignored.test"}, provider_id="codex"),
+        model,
+    )
+    expected_type = CodexTextBackend if media_type == "text" else CodexImageBackend
+    assert isinstance(backend, expected_type)
+    assert backend.name == "codex"
+    assert backend.model == model
+
+
 class TestTextSimpleSpec:
     """简单文本族（ark / ark-agent-plan / grok / agnes）：model + api_key（无条件透传）+ base_url
     （user > registry default，仅非空才传）。映射到文本 registry 的 create_backend，registry_backend
@@ -494,7 +509,7 @@ class TestRegistryShape:
             assert (provider, "video") in PROVIDER_SPEC_REGISTRY
 
     def test_text_family_complete(self):
-        # 文本九对：七 provider + gemini 两 id（aistudio/vertex）
+        # API providers and the subscription provider each declare their own constructor.
         text_keys = {k for k in PROVIDER_SPEC_REGISTRY if k[1] == "text"}
         assert text_keys == {
             ("ark", "text"),
@@ -504,6 +519,7 @@ class TestRegistryShape:
             ("gemini-aistudio", "text"),
             ("gemini-vertex", "text"),
             ("openai", "text"),
+            ("codex", "text"),
             ("dashscope", "text"),
             ("minimax", "text"),
         }

@@ -30,7 +30,7 @@ from lib.reference_video.draft_validation import DraftViolation
 from server.services.script_review import ScriptReviewError, ScriptReviewService
 
 
-def _drama_script_plan() -> dict:
+def _drama_script_plan(*, mixed: bool = False) -> dict:
     return {
         "title": "第一集",
         "scenes": [
@@ -43,7 +43,11 @@ def _drama_script_plan() -> dict:
                 "props": [],
                 "scene_description": "雨夜，阿离立于屋檐下",
                 "utterances": [
-                    {"kind": "voiceover", "speaker": None, "text": "三年后。"},
+                    {
+                        "kind": "voiceover" if mixed else "dialogue",
+                        "speaker": None if mixed else "阿离",
+                        "text": "三年后。" if mixed else "三年了。",
+                    },
                     {"kind": "dialogue", "speaker": "阿离", "text": "你终于回来了。"},
                 ],
                 "source_text": "三年后，阿离立于屋檐下，轻声道：你终于回来了。",
@@ -330,9 +334,9 @@ class TestDramaGateFlow:
     async def test_legacy_mixed_scene_allows_metadata_edit_but_rejects_speech_edit_atomically(self, tmp_path):
         pm = _make_project(tmp_path, "drama")
         svc = ScriptReviewService(pm)
-        path = _write_script_plan(pm, "drama", _drama_script_plan())
+        path = _write_script_plan(pm, "drama", _drama_script_plan(mixed=True))
 
-        metadata_edit = _drama_script_plan()
+        metadata_edit = _drama_script_plan(mixed=True)
         metadata_edit["scenes"][0]["scene_description"] = "雨势渐急，阿离仍站在屋檐下"
         await svc.save_content("demo", 1, metadata_edit)
 

@@ -75,7 +75,7 @@ async function getConfigStatus(): Promise<{
   return {
     issues,
     availableMediaTypes,
-    isEmbeddedAgentConfigured: configRes.settings.anthropic_api_key?.is_set ?? false,
+    isEmbeddedAgentConfigured: configRes.settings.agent_ready ?? configRes.settings.anthropic_api_key?.is_set ?? false,
   };
 }
 

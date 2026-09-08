@@ -152,6 +152,7 @@ def _make_reference_video_script(episode: int, content_mode: str, unit_specs: li
     }
 
 
+@pytest.mark.usefixtures("isolated_app_data_dir")
 class TestCostEstimationService:
     async def test_shared_video_quote_exposes_exact_amount_currency_and_request_coordinates(self, db_factory):
         quote = await quote_video_request(

@@ -80,8 +80,12 @@ function makeCredential(overrides?: Partial<AgentCredential>): AgentCredential {
   };
 }
 
-function setupBaseMocks(opts?: { credentials?: AgentCredential[] }) {
+function setupBaseMocks(opts?: { credentials?: AgentCredential[]; codex?: boolean }) {
   vi.spyOn(API, "getSystemConfig").mockResolvedValue(makeConfigResponse());
+  vi.spyOn(API, "getAgentRuntime").mockResolvedValue({
+    enabled: opts?.codex ?? false, runtime: opts?.codex ? "codex" : "claude", ready: true, model: "model-small", reasoning_effort: "low",
+    models: [{ id: "model-small", display_name: "Small", supported_reasoning_efforts: ["low"] }], error_code: null,
+  });
   vi.spyOn(API, "listAgentCredentials").mockResolvedValue({
     credentials: opts?.credentials ?? [],
   });
@@ -177,11 +181,13 @@ describe("AgentConfigTab — 用户记忆", () => {
   });
 
   it("Agent 分区挂出用户记忆文件柜，并按用户级路径拉取", async () => {
-    setupBaseMocks();
+    setupBaseMocks({ codex: true });
     render(<AgentConfigTab visible />);
 
     expect(await screen.findByText(/用户记忆|User memory/)).toBeInTheDocument();
     expect(await screen.findByText("/data/.arcreel/users/default/memory")).toBeInTheDocument();
     expect(API.getAgentMemory).toHaveBeenCalledWith({ level: "user" }, expect.anything());
+    expect(await screen.findByText(/Codex Agent 已就绪|Codex Agent is ready/)).toBeInTheDocument();
+    expect(API.listAgentCredentials).not.toHaveBeenCalled();
   });
 });

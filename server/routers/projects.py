@@ -41,6 +41,7 @@ from lib.asset_fingerprints import compute_asset_fingerprints
 from lib.asset_types import asset_name_comparison_key
 from lib.character_voice import PROJECT_FIELD as CHARACTER_VOICE_BINDING_FIELD
 from lib.character_voice import VALID_CHARACTER_VOICE_BINDINGS
+from lib.codex_runtime import CodexError
 from lib.config.resolver import ConfigResolver, VideoBucketCapabilityError
 from lib.db import async_session_factory
 from lib.episode_target_duration import (
@@ -1697,7 +1698,7 @@ async def set_project_source(
                 result["overview_error"] = (
                     _t("overview_ai_response_invalid")
                     if isinstance(ov_err, PydanticValidationError)
-                    else _t("overview_generation_failed")
+                    else _t(ov_err.code if isinstance(ov_err, CodexError) else "overview_generation_failed")
                 )
 
         return result
@@ -1748,6 +1749,9 @@ async def generate_overview(name: str, _t: Translator):
         ):
             overview = await get_project_manager().generate_overview(name)
         return {"success": True, "overview": overview}
+    except CodexError as exc:
+        logger.warning("Codex 概述生成失败: name=%s code=%s", name, exc.code)
+        raise HTTPException(status_code=502, detail=_t(exc.code)) from exc
     except FileNotFoundError as exc:
         raise NotFoundError("project_not_found", name=name) from exc
     except PydanticValidationError as exc:

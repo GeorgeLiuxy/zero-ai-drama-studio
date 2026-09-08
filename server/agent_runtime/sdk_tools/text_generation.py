@@ -83,7 +83,7 @@ def get_video_capabilities_tool(ctx: ToolContext):
 
 def _draft_response(outcome: ToolOutcome[dict[str, Any]]) -> dict[str, Any]:
     if outcome.problem is not None:
-        payload = {"problem": {"code": outcome.problem.code, "detail": outcome.problem.detail}}
+        payload = {"problem": outcome.problem.model_dump(mode="json")}
         return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}], "is_error": True}
     return {"content": [{"type": "text", "text": json.dumps({"draft": outcome.value}, ensure_ascii=False)}]}
 
@@ -102,7 +102,8 @@ _OPEN_DRAFT_SCHEMA["properties"]["source"]["description"] = (
 def open_draft_tool(ctx: ToolContext):
     @tool(
         OPEN_DRAFT_TOOL_NAME,
-        "读取指定草稿；草稿不存在时从对应正式文档创建编辑副本。返回完整正文、违约与 canonical revision。",
+        "读取指定草稿；草稿不存在时从对应正式文档创建编辑副本。返回完整正文、违约与 revision。"
+        "revision 和 formal_revision 是各自独立的不透明令牌，后续调用须原样传回，勿增删前缀或互换字段。",
         _OPEN_DRAFT_SCHEMA,
     )
     async def _handler(args: dict[str, Any]) -> dict[str, Any]:
@@ -122,10 +123,14 @@ def patch_draft_tool(ctx: ToolContext):
         "properties": {
             **_DRAFT_LOCATOR_SCHEMA["properties"],
             "content": {"type": "object", "description": "替换后的完整草稿正文；允许中间态不通过业务校验"},
-            "base_revision": {"type": "string", "description": "open_draft / 上次 patch_draft 返回的 revision"},
+            "base_revision": {
+                "type": "string",
+                "description": "原样传回 open_draft / 上次 patch_draft 的 revision；不透明令牌，勿增删前缀，不得使用 formal_revision",
+            },
             "accept_formal_revision": {
                 "type": ["string", "null"],
-                "description": "合并正式文档并发修改后，显式接受 open_draft 返回的 formal_revision",
+                "description": "合并正式文档并发修改后，原样传回 open_draft 的 formal_revision；"
+                "不透明令牌，勿增删前缀，不得使用草稿 revision；null 表示正式文档不存在",
             },
             "source": {
                 "type": ["string", "null"],
@@ -162,7 +167,10 @@ def discard_draft_tool(ctx: ToolContext):
         **_DRAFT_LOCATOR_SCHEMA,
         "properties": {
             **_DRAFT_LOCATOR_SCHEMA["properties"],
-            "base_revision": {"type": "string", "description": "open_draft / 上次 patch_draft 返回的 revision"},
+            "base_revision": {
+                "type": "string",
+                "description": "原样传回 open_draft / 上次 patch_draft 的 revision；不透明令牌，勿增删前缀，不得使用 formal_revision",
+            },
         },
         "required": ["episode", "doc_type", "base_revision"],
     }
@@ -189,7 +197,10 @@ def promote_draft_tool(ctx: ToolContext):
         **_DRAFT_LOCATOR_SCHEMA,
         "properties": {
             **_DRAFT_LOCATOR_SCHEMA["properties"],
-            "base_revision": {"type": "string", "description": "open_draft 返回的当前草稿 revision"},
+            "base_revision": {
+                "type": "string",
+                "description": "原样传回 open_draft / patch_draft 的当前草稿 revision；不透明令牌，勿增删前缀，不得使用 formal_revision",
+            },
         },
         "required": [*_DRAFT_LOCATOR_SCHEMA["required"], "base_revision"],
     }

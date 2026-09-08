@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
 
 from lib.agnes_shared import AGNES_BASE_URL
 from lib.ark_shared import ARK_BASE_URL
@@ -19,6 +19,7 @@ from lib.pricing.types import (
     PerTokenVideo,
     PerVideoBucket,
     Pricing,
+    Subscription,
     ViduDelegate,
 )
 
@@ -88,6 +89,7 @@ class ProviderMeta:
     # lane 无害——_lane_limits 会按 media_types 把不支持的 lane 投影为 0。键名与上限值在
     # __post_init__ 校验。
     default_concurrency: dict[str, int] = field(default_factory=dict)
+    model_source: Callable[[], dict[str, ModelInfo]] | None = None
 
     def __post_init__(self) -> None:
         # default_concurrency 是注册表静态声明：拼错的 lane key 会被静默忽略、该 lane 漂回
@@ -123,12 +125,17 @@ class ProviderMeta:
                 raise ValueError(f"{self.display_name} credential_groups 未覆盖 {sorted(allowed - covered)}")
 
     @property
+    def effective_models(self) -> dict[str, ModelInfo]:
+        """Return the current catalog without modifying static registry declarations."""
+        return self.model_source() if self.model_source is not None else self.models
+
+    @property
     def media_types(self) -> list[str]:
-        return sorted({m.media_type for m in self.models.values()})
+        return sorted({m.media_type for m in self.effective_models.values()})
 
     @property
     def capabilities(self) -> list[str]:
-        return sorted({c for m in self.models.values() for c in m.capabilities})
+        return sorted({c for m in self.effective_models.values() for c in m.capabilities})
 
     def fully_covered_credential_groups(self, values: Mapping[str, str | None]) -> list[list[str]]:
         """返回被 ``values`` 完整覆盖的凭证组（组内所有 key 均非空）。
@@ -137,6 +144,52 @@ class ProviderMeta:
         （绝大多数）该列表恒为空，调用方据此保持"不做切组处理"的原语义不变。
         """
         return [group for group in self.credential_groups if all(values.get(k) for k in group)]
+
+
+def read_codex_state() -> Mapping[str, Any]:
+    """Read cached local connection state; catalog reads never start Codex."""
+    from lib.codex_runtime import read_state
+
+    return read_state()
+
+
+def codex_models_from_state(state: Mapping[str, Any]) -> dict[str, ModelInfo]:
+    """Build subscription model capabilities only from a connected account snapshot."""
+    if not state.get("enabled") or not state.get("connected"):
+        return {}
+    models: dict[str, ModelInfo] = {}
+    raw_models = state.get("models", [])
+    for entry in raw_models if isinstance(raw_models, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        model_id = entry.get("model") or entry.get("id")
+        if not isinstance(model_id, str) or not model_id.strip():
+            continue
+        capabilities: list[ModelCapability] = ["text_generation", "structured_output"]
+        modalities = entry.get("inputModalities", [])
+        if isinstance(modalities, list) and "image" in modalities:
+            capabilities.append("vision")
+        display_name = entry.get("displayName")
+        models[model_id] = ModelInfo(
+            display_name=display_name if isinstance(display_name, str) and display_name else model_id,
+            media_type="text",
+            capabilities=capabilities,
+            default=entry.get("isDefault") is True,
+            pricing=Subscription(),
+        )
+    if state.get("image_generation") is True:
+        models["gpt-image-2"] = ModelInfo(
+            display_name="GPT Image 2",
+            media_type="image",
+            capabilities=["text_to_image", "image_to_image"],
+            default=True,
+            pricing=Subscription(),
+        )
+    return models
+
+
+def codex_models() -> dict[str, ModelInfo]:
+    return codex_models_from_state(read_codex_state())
 
 
 # Gemini 文本费率（美元/百万 token），Standard paid tier、prompt ≤200K 区间。
@@ -822,6 +875,14 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
             ),
         },
     ),
+    "codex": ProviderMeta(
+        display_name="Codex",
+        description="使用本机 Codex 登录的 ChatGPT 订阅，模型与图片能力以已连接账户为准。",
+        required_keys=[],
+        optional_keys=["image_max_workers"],
+        model_source=codex_models,
+        default_concurrency={"image": 1},
+    ),
     "openai": ProviderMeta(
         display_name="OpenAI",
         description="OpenAI 官方平台，支持 GPT-5.5 / GPT-5.4 文本、GPT Image 2 图片和 Sora 视频生成。",
@@ -1404,7 +1465,7 @@ def model_info_for(provider_id: str, model_id: str) -> ModelInfo | None:
     meta = PROVIDER_REGISTRY.get(provider_id)
     if meta is None:
         return None
-    return meta.models.get(model_id)
+    return meta.effective_models.get(model_id)
 
 
 def default_model_for_provider(provider_id: str, media_type: str) -> str | None:
@@ -1412,7 +1473,7 @@ def default_model_for_provider(provider_id: str, media_type: str) -> str | None:
     meta = PROVIDER_REGISTRY.get(provider_id)
     if meta is None:
         return None
-    for model_id, model_info in meta.models.items():
+    for model_id, model_info in meta.effective_models.items():
         if model_info.media_type == media_type and model_info.default:
             return model_id
     return None

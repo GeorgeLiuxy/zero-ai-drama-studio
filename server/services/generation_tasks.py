@@ -408,7 +408,7 @@ def _get_model_default_duration(provider_name: str, model_name: str | None) -> i
     """从 PROVIDER_REGISTRY 查找模型的 supported_durations[0]，找不到则 fallback 4。"""
     provider_meta = PROVIDER_REGISTRY.get(provider_name)
     if provider_meta and model_name:
-        model_info = provider_meta.models.get(model_name)
+        model_info = provider_meta.effective_models.get(model_name)
         if model_info and model_info.supported_durations:
             return model_info.supported_durations[0]
     # 自定义供应商或 registry 中无此模型时 fallback

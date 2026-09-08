@@ -1,0 +1,101 @@
+{
+  "sha": "074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+  "node_id": "C_kwDOMRSMstoAKDA3NGNhNmRjOWU4MGEyZjQyNGYxZjc0YjQ4YmRkN2QzZmVhNTMxY2M",
+  "commit": {
+    "author": {
+      "name": "zhifu gao",
+      "email": "zhifu.gzf@alibaba-inc.com",
+      "date": "2026-05-25T18:15:40Z"
+    },
+    "committer": {
+      "name": "zhifu gao",
+      "email": "zhifu.gzf@alibaba-inc.com",
+      "date": "2026-05-25T18:15:40Z"
+    },
+    "message": "Add FunAudioLLM ecosystem section with links to ASR projects",
+    "tree": {
+      "sha": "8a32a505b2a7bb81e4847cb658b66fa93832c3f0",
+      "url": "https://api.github.com/repos/QwenAudio/CosyVoice/git/trees/8a32a505b2a7bb81e4847cb658b66fa93832c3f0"
+    },
+    "url": "https://api.github.com/repos/QwenAudio/CosyVoice/git/commits/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+    "comment_count": 1,
+    "verification": {
+      "verified": false,
+      "reason": "unsigned",
+      "signature": null,
+      "payload": null,
+      "verified_at": null
+    }
+  },
+  "url": "https://api.github.com/repos/QwenAudio/CosyVoice/commits/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+  "html_url": "https://github.com/QwenAudio/CosyVoice/commit/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+  "comments_url": "https://api.github.com/repos/QwenAudio/CosyVoice/commits/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc/comments",
+  "author": {
+    "login": "LauraGPT",
+    "id": 18321252,
+    "node_id": "MDQ6VXNlcjE4MzIxMjUy",
+    "avatar_url": "https://avatars.githubusercontent.com/u/18321252?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/LauraGPT",
+    "html_url": "https://github.com/LauraGPT",
+    "followers_url": "https://api.github.com/users/LauraGPT/followers",
+    "following_url": "https://api.github.com/users/LauraGPT/following{/other_user}",
+    "gists_url": "https://api.github.com/users/LauraGPT/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/LauraGPT/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/LauraGPT/subscriptions",
+    "organizations_url": "https://api.github.com/users/LauraGPT/orgs",
+    "repos_url": "https://api.github.com/users/LauraGPT/repos",
+    "events_url": "https://api.github.com/users/LauraGPT/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/LauraGPT/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "committer": {
+    "login": "LauraGPT",
+    "id": 18321252,
+    "node_id": "MDQ6VXNlcjE4MzIxMjUy",
+    "avatar_url": "https://avatars.githubusercontent.com/u/18321252?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/LauraGPT",
+    "html_url": "https://github.com/LauraGPT",
+    "followers_url": "https://api.github.com/users/LauraGPT/followers",
+    "following_url": "https://api.github.com/users/LauraGPT/following{/other_user}",
+    "gists_url": "https://api.github.com/users/LauraGPT/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/LauraGPT/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/LauraGPT/subscriptions",
+    "organizations_url": "https://api.github.com/users/LauraGPT/orgs",
+    "repos_url": "https://api.github.com/users/LauraGPT/repos",
+    "events_url": "https://api.github.com/users/LauraGPT/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/LauraGPT/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "parents": [
+    {
+      "sha": "ace7c47f41bbd303aa6bf1ea80e6f9fbd595cd40",
+      "url": "https://api.github.com/repos/QwenAudio/CosyVoice/commits/ace7c47f41bbd303aa6bf1ea80e6f9fbd595cd40",
+      "html_url": "https://github.com/QwenAudio/CosyVoice/commit/ace7c47f41bbd303aa6bf1ea80e6f9fbd595cd40"
+    }
+  ],
+  "stats": {
+    "total": 11,
+    "additions": 11,
+    "deletions": 0
+  },
+  "files": [
+    {
+      "sha": "ef8829e0e981678cd95cb1d4c88465ae97804b88",
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "changes": 11,
+      "blob_url": "https://github.com/QwenAudio/CosyVoice/blob/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc/README.md",
+      "raw_url": "https://github.com/QwenAudio/CosyVoice/raw/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc/README.md",
+      "contents_url": "https://api.github.com/repos/QwenAudio/CosyVoice/contents/README.md?ref=074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+      "patch": "@@ -260,5 +260,16 @@ You can also scan the QR code to join our official Dingding chat group.\n }\n ```\n \n+## Ecosystem\n+\n+CosyVoice is part of the **FunAudioLLM** family — a complete speech AI toolkit:\n+\n+| Project | Description | Stars |\n+|---------|-------------|-------|\n+| [FunASR](https://github.com/modelscope/FunASR) | Industrial speech recognition — 50+ languages, speaker diarization, streaming | [![](https://img.shields.io/github/stars/modelscope/FunASR?style=social)](https://github.com/modelscope/FunASR) |\n+| [Fun-ASR-Nano](https://github.com/FunAudioLLM/Fun-ASR) | End-to-end LLM-based ASR — 31 languages, hotwords, vLLM streaming | [![](https://img.shields.io/github/stars/FunAudioLLM/Fun-ASR?style=social)](https://github.com/FunAudioLLM/Fun-ASR) |\n+| [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) | Ultra-fast ASR + emotion + audio event detection | [![](https://img.shields.io/github/stars/FunAudioLLM/SenseVoice?style=social)](https://github.com/FunAudioLLM/SenseVoice) |\n+| [FunClip](https://github.com/modelscope/FunClip) | AI video clipping powered by speech recognition | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |\n+\n ## Disclaimer\n The content provided above is for academic purposes only and is intended to demonstrate technical capabilities. Some examples are sourced from the internet. If any content infringes on your rights, please contact us to request its removal."
+    }
+  ]
+}

@@ -35,7 +35,7 @@ def raise_review_error(exc: ScriptReviewError, episode: int, _t: Translator) -> 
     """把 ``ScriptReviewError`` 抛成对应的 ``HTTPException``；未登记的错误码落 400。"""
     status = _ERROR_STATUS.get(exc.code, 400)
     if exc.code == "speech_admission" and exc.admission is not None:
-        detail = exc.admission.to_dict()
+        detail = {**exc.admission.to_dict(), "admissions": [admission.to_dict() for admission in exc.admissions]}
     elif exc.code == "invalid_content":
         detail = _t("script_review_invalid_content", details=exc.message)
     elif exc.code == "episode_not_found":

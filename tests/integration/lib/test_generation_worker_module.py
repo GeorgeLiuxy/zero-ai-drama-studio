@@ -328,11 +328,11 @@ def _patch_pm(monkeypatch, project: dict | None):
 
 
 @pytest.fixture
-async def patch_empty_db(db_factory, monkeypatch):
-    """把全局 async_session_factory 换成空内存库，隔离掉真实数据库。
+async def patch_empty_db(db_factory, monkeypatch, isolated_app_data_dir):
+    """把全局 async_session_factory 换成空内存库，同时隔离本机供应商目录。
 
     无 project_name 的 _extract_provider 会用 lib.db.async_session_factory 经 ConfigResolver
-    解析全局默认供应商；不隔离时它读真实 dev 库，本机一旦配了其它 ready 供应商，回退断言就被污染。
+    解析全局默认供应商；空数据库和空本机目录共同保证没有 ready 供应商。
     """
     monkeypatch.setattr("lib.db.async_session_factory", db_factory)
     return db_factory

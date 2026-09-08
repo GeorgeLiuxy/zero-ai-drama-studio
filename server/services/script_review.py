@@ -46,11 +46,44 @@ _SCRIPT_PLAN_CONTENT_MODEL: dict[str, type[BaseModel]] = {
 class ScriptReviewError(Exception):
     """gate 操作的领域错误。``code`` 供 router 映射 HTTP 状态与 i18n key；``message`` 为技术细节。"""
 
-    def __init__(self, code: str, message: str = "", *, admission: SpeechAdmission | None = None):
+    def __init__(
+        self,
+        code: str,
+        message: str = "",
+        *,
+        admission: SpeechAdmission | None = None,
+        admissions: tuple[SpeechAdmission, ...] = (),
+    ):
         super().__init__(message or code)
         self.code = code
         self.message = message
-        self.admission = admission
+        self.admissions = admissions or ((admission,) if admission is not None else ())
+        self.admission = self.admissions[0] if self.admissions else None
+
+    def speech_admission_params(self) -> dict[str, Any]:
+        """Preserve every blocker while retaining the single-unit transport field."""
+        if self.admission is None:
+            return {}
+        return {
+            "speech_admission": self.admission.to_dict(),
+            "speech_admissions": [admission.to_dict() for admission in self.admissions],
+        }
+
+
+def script_plan_speech_admissions(kind: str, content: object) -> tuple[SpeechAdmission, ...]:
+    """Inspect actual speech and durable markers for every unit in a script plan."""
+    shape = {"drama": ("scenes", "scenes"), "reference_video": ("units", "video_units")}.get(kind)
+    if shape is None or not isinstance(content, dict):
+        return ()
+    root, skeleton = shape
+    units = content.get(root)
+    if not isinstance(units, list):
+        return ()
+    return tuple(
+        admission
+        for unit in units
+        if isinstance(unit, dict) and not (admission := admit_script_unit(skeleton, unit)).allowed
+    )
 
 
 def _require_changed_speech_admitted(kind: str, previous: object, candidate: object) -> None:
@@ -515,30 +548,18 @@ class ScriptReviewService:
                 raise ScriptReviewError("no_script_plan")
             # 确认前按 script_plan 变体模型校验 script_plan 结构：content 为 None（非法 JSON / 非对象）同样会
             # 在此被 model_validate 拒绝为 invalid_content，不会被仅凭「文件存在」放行。
+            admissions = script_plan_speech_admissions(kind, content)
+            if admissions:
+                raise ScriptReviewError("speech_admission", admissions=admissions)
             try:
                 validated = model.model_validate(content)
             except ValidationError as exc:
                 raise ScriptReviewError("invalid_content", str(exc)) from exc
 
-            marked_shape = {
-                "drama": ("scenes", "scenes"),
-                "reference_video": ("units", "video_units"),
-            }.get(kind)
-            if marked_shape is not None:
-                root, skeleton = marked_shape
-                for unit in validated.model_dump()[root]:
-                    if unit.get("needs_replan") is not True:
-                        continue
-                    admission = admit_script_unit(skeleton, unit)
-                    raise ScriptReviewError("speech_admission", admission=admission)
+            dumped = validated.model_dump()
 
             if kind == "reference_video":
                 # 指纹按刚写盘的这份对象直接算，确认记录与实际写入内容一致。
-                dumped = validated.model_dump()
-                for unit in dumped["units"]:
-                    admission = admit_script_unit("video_units", unit)
-                    if not admission.allowed:
-                        raise ScriptReviewError("speech_admission", admission=admission)
                 # 单一写盘出口（已持同一把 per-path 锁，不再套 script_plan_write_lock）；同临界区
                 # 读改写无并发窗口，不做基线比对。内容真的变了时，prompt_authoring 草稿的基底随之
                 # 失效，由出口按变更清理。

@@ -134,6 +134,19 @@ class GenerationAction(StrEnum):
 # again for the same rejection. The coverage test in
 # ``tests/unit/lib/test_generation_result.py`` is the drift guard.
 _TASK_FAILURE_ACTIONS: dict[str, GenerationAction] = {
+    "codex_unavailable": GenerationAction.CONFIGURE_PROVIDER,
+    "codex_login_required": GenerationAction.CONFIGURE_PROVIDER,
+    "codex_models_unavailable": GenerationAction.CONFIGURE_PROVIDER,
+    "codex_image_unverified": GenerationAction.CONFIGURE_PROVIDER,
+    "codex_request_failed": GenerationAction.CONFIGURE_PROVIDER,
+    "codex_cancelled": GenerationAction.RETRY,
+    "codex_empty_result": GenerationAction.RETRY,
+    "codex_invalid_json": GenerationAction.FIX_INPUT,
+    "codex_tool_unsupported": GenerationAction.FIX_INPUT,
+    # Inspect subscription state or existing artifacts before submitting another turn.
+    "codex_timeout": GenerationAction.NONE,
+    "codex_generation_failed": GenerationAction.NONE,
+    "codex_image_missing": GenerationAction.NONE,
     "needs_replan": GenerationAction.REPLAN_UNIT,
     "tts_missing": GenerationAction.GENERATE_TTS,
     "tts_stale": GenerationAction.REGENERATE_TTS,

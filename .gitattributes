@@ -1,0 +1,2 @@
+# Preserve the pinned upstream license bytes for SHA-256 verification.
+deploy/media-worker/H3-LICENSE.txt -text

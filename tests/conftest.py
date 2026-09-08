@@ -103,6 +103,17 @@ def reset_app_data_dir_cache():
     reset_for_tests()
 
 
+@pytest.fixture
+def isolated_app_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reset_app_data_dir_cache) -> Path:
+    """Use an empty deployment catalog for tests that resolve local providers."""
+    from lib.app_data_dir import reset_for_tests
+
+    data_dir = tmp_path / "app-data"
+    monkeypatch.setenv("ARCREEL_DATA_DIR", str(data_dir))
+    reset_for_tests()
+    return data_dir
+
+
 @pytest.fixture(autouse=True)
 def stub_sandbox_check(monkeypatch, request):
     """Mock ``check_sandbox_available`` 返回 True，避免测试机不满足真实 bwrap probe。

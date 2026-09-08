@@ -83,7 +83,8 @@ class TestGridManager:
         """list_all returns grids in ascending created_at order."""
         gm = GridManager(tmp_path)
         grids = [_make_grid() for _ in range(3)]
-        for g in grids:
+        for index, g in enumerate(grids):
+            g.created_at = f"2026-09-07T00:00:{2 - index:02d}+00:00"
             gm.save(g)
         loaded = gm.list_all()
         assert [g.id for g in loaded] == [g.id for g in sorted(grids, key=lambda g: g.created_at)]

@@ -1,0 +1,384 @@
+{
+  "sha": "7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+  "node_id": "C_kwDOOBPhXdoAKDdjMjVhM2M1ODY0ODQ2MDFmOTRiN2U4ZjhiMTRjMjNiMmM5NWEwOTY",
+  "commit": {
+    "author": {
+      "name": "Daxiong (Lin)",
+      "email": "contact@comfyui-wiki.com",
+      "date": "2026-09-07T17:09:51Z"
+    },
+    "committer": {
+      "name": "GitHub",
+      "email": "noreply@github.com",
+      "date": "2026-09-07T17:09:51Z"
+    },
+    "message": "Add fun ControlNet Union and GPT‑6 Astra templates (#1243)\n\nCo-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>\nCo-authored-by: GitHub Action <action@github.com>",
+    "tree": {
+      "sha": "982a5d458cbe38fc6858ccf525999ca64c948548",
+      "url": "https://api.github.com/repos/Comfy-Org/workflow_templates/git/trees/982a5d458cbe38fc6858ccf525999ca64c948548"
+    },
+    "url": "https://api.github.com/repos/Comfy-Org/workflow_templates/git/commits/7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+    "comment_count": 0,
+    "verification": {
+      "verified": true,
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJqnu/fCRC1aQ7uu5UhlAAAgU0QAAG9MZg8sgwP3hXMYybydMR6\nMYYO3fPCeKdVU3XYlDIzhAA1Mc2i8LDsq9+M1tsS4NBohMZgBn7KAYSgSWpP/zD1\nm1dRHYE2hznumGPU+011m+WAEpBxpocR0IztSoTdJ1Ca00S6DLIu123gGadsGM9i\nH5SYuP1JvntQPRr4cL8De9Lcw8XpC/TI/09utfBReAIGG8Pd69bbH1eFu/ELeyO3\nyIBs6iBfkkdBCfYCEcmc7ByrLXmtAIJVtPUib5cRROqtfCkd+bFuvhWwW/5iAzJW\n5Z3JSBLwYjzkCCusIUIw52Dcg1bR2MdYDtHjZHzhtVsiUQVw+16nr/4lLKwuvTvw\nLSwlBp44vbYmTRk1ixXC2BkWqo+edTjHQGMgt+qpC4+3bqD9WTOFZdPIVwFmSlUF\nEp1JeYpI8E3mOo2ez6mpdcx8Yz8giedI4R6yCNfCPQMlXFhVuFpa4R7gswXLua3V\nzWN60ZLjN51iTCOWbdIR+ncKQJGYIZAXHxuY/yL4pE4e07uL+gqX+01UUxtnEP2e\nXk0H9tggXl2WMGx6y852HbEIOXlBW2Z2QbjLGiR9T7hr++1pz2mJHFGQ8ND+2g29\nWFQ3b6bWs+4Gh0ANkBxjKyrf8v7h99Qoct/v2pFWfy6RgnnzLF1lsoKWhS0VvLn3\nczTC1fxuspfz79jilKC2\n=c0Hm\n-----END PGP SIGNATURE-----\n",
+      "payload": "tree 982a5d458cbe38fc6858ccf525999ca64c948548\nparent d329809768eec73dc73e26a68c95c9e4976e03ce\nauthor Daxiong (Lin) <contact@comfyui-wiki.com> 1788800991 +0800\ncommitter GitHub <noreply@github.com> 1788800991 +0800\n\nAdd fun ControlNet Union and GPT‑6 Astra templates (#1243)\n\nCo-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>\nCo-authored-by: GitHub Action <action@github.com>",
+      "verified_at": "2026-09-07T17:09:52Z"
+    }
+  },
+  "url": "https://api.github.com/repos/Comfy-Org/workflow_templates/commits/7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+  "html_url": "https://github.com/Comfy-Org/workflow_templates/commit/7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+  "comments_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/commits/7c25a3c586484601f94b7e8f8b14c23b2c95a096/comments",
+  "author": {
+    "login": "comfyui-wiki",
+    "id": 192523189,
+    "node_id": "U_kgDOC3mrtQ",
+    "avatar_url": "https://avatars.githubusercontent.com/u/192523189?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/comfyui-wiki",
+    "html_url": "https://github.com/comfyui-wiki",
+    "followers_url": "https://api.github.com/users/comfyui-wiki/followers",
+    "following_url": "https://api.github.com/users/comfyui-wiki/following{/other_user}",
+    "gists_url": "https://api.github.com/users/comfyui-wiki/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/comfyui-wiki/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/comfyui-wiki/subscriptions",
+    "organizations_url": "https://api.github.com/users/comfyui-wiki/orgs",
+    "repos_url": "https://api.github.com/users/comfyui-wiki/repos",
+    "events_url": "https://api.github.com/users/comfyui-wiki/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/comfyui-wiki/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "committer": {
+    "login": "web-flow",
+    "id": 19864447,
+    "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+    "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/web-flow",
+    "html_url": "https://github.com/web-flow",
+    "followers_url": "https://api.github.com/users/web-flow/followers",
+    "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+    "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+    "organizations_url": "https://api.github.com/users/web-flow/orgs",
+    "repos_url": "https://api.github.com/users/web-flow/repos",
+    "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/web-flow/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "parents": [
+    {
+      "sha": "d329809768eec73dc73e26a68c95c9e4976e03ce",
+      "url": "https://api.github.com/repos/Comfy-Org/workflow_templates/commits/d329809768eec73dc73e26a68c95c9e4976e03ce",
+      "html_url": "https://github.com/Comfy-Org/workflow_templates/commit/d329809768eec73dc73e26a68c95c9e4976e03ce"
+    }
+  ],
+  "stats": {
+    "total": 19621,
+    "additions": 11731,
+    "deletions": 7890
+  },
+  "files": [
+    {
+      "sha": "b2ab51e480e4d764b55f2f21caf0458f45018ad2",
+      "filename": ".github/.wordlist.txt",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "changes": 3,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/.github%2F.wordlist.txt",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/.github%2F.wordlist.txt",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/.github%2F.wordlist.txt?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -14,6 +14,7 @@ jpg\n MP4\n mp4\n mp3\n+muxed\n workflow\n IdeogramV\n IdeogramV4\n@@ -24,6 +25,7 @@ vae\n UNETLoader\n CLIPLoader\n VAELoader\n+ModelPatchLoader\n SaveWEBM\n huggingface\n embeddings\n@@ -122,6 +124,7 @@ IC\n ic\n CogVideo\n CogVideoX\n+VideoX\n GGUF\n gguf\n fp16"
+    },
+    {
+      "sha": "828f9b227e75b897828cf8a3839cdf2416378f39",
+      "filename": "bundles.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "changes": 5,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/bundles.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/bundles.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/bundles.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -584,7 +584,6 @@\n     \"api_seedance2_5_flf2v\",\n     \"api_qwen3_image_edit\",\n     \"video_ltx2_5_t2v\",\n-    \"video_wan_animate2\",\n     \"api_ltx2_5_i2v\",\n     \"api_ltx2_5_flf2v\",\n     \"api_ltx2_5_t2v\",\n@@ -641,6 +640,8 @@\n     \"api_anthropic_claude_fable5_1\",\n     \"api_minimax_h3_max_turbo_t2v\",\n     \"api_minimax_h3_max_turbo_i2v\",\n-    \"api_openai_gpt6_astra\"\n+    \"api_openai_gpt6_astra\",\n+    \"video_minimax_h3_fun_controlnet_union\",\n+    \"video_wan_animate2\"\n   ]\n }\n\\ No newline at end of file"
+    },
+    {
+      "sha": "cbba9058930b4a8553bae4ac70dc4add8ea3bb94",
+      "filename": "input/dancer_field_pose.mp4",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/input%2Fdancer_field_pose.mp4",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/input%2Fdancer_field_pose.mp4",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/input%2Fdancer_field_pose.mp4?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "bd14a3d3fcde9dfcfe131f62507df624f4488e72",
+      "filename": "packages/core/pyproject.toml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fcore%2Fpyproject.toml",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fcore%2Fpyproject.toml",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/packages%2Fcore%2Fpyproject.toml?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -4,7 +4,7 @@ build-backend = \"setuptools.build_meta\"\n \n [project]\n name = \"comfyui-workflow-templates-core\"\n-version = \"0.3.333\"\n+version = \"0.3.334\"\n description = \"Core helpers for ComfyUI workflow templates\"\n readme = {text = \"Core helpers for ComfyUI workflow templates.\", content-type = \"text/plain\"}\n requires-python = \">=3.9\""
+    },
+    {
+      "sha": "f00c7ad7ef45398fd64b0c5b5650910ae612c033",
+      "filename": "packages/core/src/comfyui_workflow_templates_core/manifest.json",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 13,
+      "changes": 48,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fcore%2Fsrc%2Fcomfyui_workflow_templates_core%2Fmanifest.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fcore%2Fsrc%2Fcomfyui_workflow_templates_core%2Fmanifest.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/packages%2Fcore%2Fsrc%2Fcomfyui_workflow_templates_core%2Fmanifest.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -6223,7 +6223,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.json\",\n-          \"sha256\": \"9d08b5c4fba227d2bdef05776638e8a8b80d83997571c3641219d6e40df66125\"\n+          \"sha256\": \"a6e141defe5a823d3e3212d1610ae1a69dd27f04a3ddaf110697cc30a32f6719\"\n         }\n       ],\n       \"cdn\": {\n@@ -6237,7 +6237,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.ar.json\",\n-          \"sha256\": \"abe7e6f69d38688db751023bb6380b261b736c280407395f1ca3033e8f6387fc\"\n+          \"sha256\": \"be59b668c2131be722c234be25f3db01aba879943da9a74d76c2c82e6bffffb7\"\n         }\n       ],\n       \"cdn\": {\n@@ -6251,7 +6251,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.es.json\",\n-          \"sha256\": \"282c265f6c69b61b356181b9b7430f187e6285409f7d83233a72f9787d245202\"\n+          \"sha256\": \"b7889d459ac3a462df6d10007c90af18f5e2395d342bfc3509c97b3cb8dc613b\"\n         }\n       ],\n       \"cdn\": {\n@@ -6265,7 +6265,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.fa.json\",\n-          \"sha256\": \"4b746af0fdfa9c4dde6106df5c3882d7c31d2dafc2480b374dd168a91f4d8dfc\"\n+          \"sha256\": \"b09ca808d50d137a23efa121fe8c364df7a348a29d0745b88c7a1a1ad08691b8\"\n         }\n       ],\n       \"cdn\": {\n@@ -6279,7 +6279,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.fr.json\",\n-          \"sha256\": \"0ca047ca93cae004ccadf31d249a919accf5b842eae151eaf68a3360d8785f66\"\n+          \"sha256\": \"ead7f498a2092cfc28b2a41bd08fb155fe363776d1c1d3141f5a176e4d3e7cc4\"\n         }\n       ],\n       \"cdn\": {\n@@ -6293,7 +6293,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.ja.json\",\n-          \"sha256\": \"fa35c648d45be32a5f9699a287d98ccda48b24664e90323d75c06f8382ac9e22\"\n+          \"sha256\": \"6ac5390c9e49474c774b0e23f3921642cb56563e74aaa4b84ade87d847cccf5c\"\n         }\n       ],\n       \"cdn\": {\n@@ -6307,7 +6307,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.ko.json\",\n-          \"sha256\": \"336ad0df6631a2827eb3dd81dd62bf8f9aa3f0b828a78bc402b22a46a3950a05\"\n+          \"sha256\": \"8afd3ddf3f3f0bb3ffca3fd99f51bc23964c19e584f65d09a9bc912e2b539fab\"\n         }\n       ],\n       \"cdn\": {\n@@ -6321,7 +6321,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.mcp.json\",\n-          \"sha256\": \"4badc0b078d64fd9351e8e8931d46105725ad72c0f7553dde3abb23ffdaf4e4d\"\n+          \"sha256\": \"a5ef4eaf5e31f6e4b6d857d380a950243c60738fd777d5b14e96826ff3bf5c1a\"\n         }\n       ],\n       \"cdn\": {\n@@ -6335,7 +6335,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.pt-BR.json\",\n-          \"sha256\": \"20b6289a0146cff5f001e3fe5dbf7d1a85b55a28fce8a9cbba0b522458655bf7\"\n+          \"sha256\": \"75dede6ddd0ba01af6fbdb913ded833742d098647053e41a8eed81bef04cd481\"\n         }\n       ],\n       \"cdn\": {\n@@ -6349,7 +6349,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.ru.json\",\n-          \"sha256\": \"aab06d401a7e4f1111696b27c57d53bda5f7d5139cc396e04bb7cd68cbc83b0c\"\n+          \"sha256\": \"2226fcccaf8eeb86711ec58b7f15271f233fb7cbd7c03563fea428113310df47\"\n         }\n       ],\n       \"cdn\": {\n@@ -6377,7 +6377,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.tr.json\",\n-          \"sha256\": \"e8bfb3f9134c972de06c4afd0cf0d197411d591b838d0e3f9134ade0a41c1efb\"\n+          \"sha256\": \"81a6cf22f8ffd8087a82c513e973d05dd01f55cdf3adbd91d483f51a45dac9c1\"\n         }\n       ],\n       \"cdn\": {\n@@ -6391,7 +6391,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.zh.json\",\n-          \"sha256\": \"a070ea2692235db6626a5de08f303c9a3a79a4f6a6ab7fe0f5c524f15b204ad9\"\n+          \"sha256\": \"7cd981455b07191df9d3f5e0e9e81db92c8b4c0a9f6bb3f182e5a6dea0bade64\"\n         }\n       ],\n       \"cdn\": {\n@@ -6405,7 +6405,7 @@\n       \"assets\": [\n         {\n           \"filename\": \"index.zh-TW.json\",\n-          \"sha256\": \"7e863cf20e3fa1ae42c988bde15eee99d9c30011b70ce4da26cbc326a6d03cf1\"\n+          \"sha256\": \"c2da1d64ac39ffabd3028955aa6c3112dd6ef05742271e731bd87211af352819\"\n         }\n       ],\n       \"cdn\": {\n@@ -10524,6 +10524,28 @@\n         \"path\": \"media-assets-01/video_ltx2_5_t2v/\"\n       }\n     },\n+    {\n+      \"id\": \"video_minimax_h3_fun_controlnet_union\",\n+      \"bundle\": \"media-assets-01\",\n+      \"version\": \"0.0.0\",\n+      \"assets\": [\n+        {\n+          \"filename\": \"video_minimax_h3_fun_controlnet_union.json\",\n+          \"sha256\": \"ec82867872aaf4c28901fafaf4e3fed3081e0c74c1968c34e4194878c5c0c0af\"\n+        },\n+        {\n+          \"filename\": \"video_minimax_h3_fun_controlnet_union-1.webp\",\n+          \"sha256\": \"fc2cd866df43cd6130ac33abc1c9850a35378404668b8111336354e0990193ed\"\n+        },\n+        {\n+          \"filename\": \"video_minimax_h3_fun_controlnet_union-2.webp\",\n+          \"sha256\": \"1e5847ce5ef5d9c6e3fae81456eb880bdb5805b3b61062959699872e87d85f60\"\n+        }\n+      ],\n+      \"cdn\": {\n+        \"path\": \"media-assets-01/video_minimax_h3_fun_controlnet_union/\"\n+      }\n+    },\n     {\n       \"id\": \"video_minimax_h3_i2v\",\n       \"bundle\": \"media-assets-01\","
+    },
+    {
+      "sha": "e90fa28b1bc178c4a82cc1ba82c25ba262c6c927",
+      "filename": "packages/json/pyproject.toml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fjson%2Fpyproject.toml",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fjson%2Fpyproject.toml",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/packages%2Fjson%2Fpyproject.toml?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -4,7 +4,7 @@ build-backend = \"setuptools.build_meta\"\n \n [project]\n name = \"comfyui-workflow-templates-json\"\n-version = \"0.1.68\"\n+version = \"0.1.69\"\n description = \"Workflow template JSON definitions for ComfyUI\"\n readme = {text = \"Workflow template JSON definitions for ComfyUI.\", content-type = \"text/plain\"}\n requires-python = \">=3.9\""
+    },
+    {
+      "sha": "c50c9db211638f9f8afbd94a160ea39ff58dd522",
+      "filename": "packages/media_assets_01/pyproject.toml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fmedia_assets_01%2Fpyproject.toml",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/packages%2Fmedia_assets_01%2Fpyproject.toml",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/packages%2Fmedia_assets_01%2Fpyproject.toml?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -4,7 +4,7 @@ build-backend = \"setuptools.build_meta\"\n \n [project]\n name = \"comfyui-workflow-templates-media-assets-01\"\n-version = \"0.1.39\"\n+version = \"0.1.40\"\n description = \"Media assets bundle 01 for ComfyUI workflow templates\"\n readme = {text = \"Media assets bundle 01 for ComfyUI workflow templates.\", content-type = \"text/plain\"}\n requires-python = \">=3.9\""
+    },
+    {
+      "sha": "8cbf3a23a1edb9f0f19b590020a9b3df08be6d3c",
+      "filename": "pyproject.toml",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "changes": 16,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/pyproject.toml",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/pyproject.toml",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/pyproject.toml?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -4,7 +4,7 @@ build-backend = \"setuptools.build_meta\"\n \n [project]\n name = \"comfyui_workflow_templates\"\n-version = \"0.11.55\"\n+version = \"0.11.56\"\n description = \"ComfyUI workflow templates package\"\n readme = \"README.md\"\n requires-python = \">=3.9\"\n@@ -18,25 +18,25 @@ classifiers = [\n ]\n \n dependencies = [\n-    \"comfyui-workflow-templates-core==0.3.333\",\n-    \"comfyui-workflow-templates-json==0.1.68\",\n+    \"comfyui-workflow-templates-core==0.3.334\",\n+    \"comfyui-workflow-templates-json==0.1.69\",\n     \"comfyui-workflow-templates-media-api==0.3.84\",\n     \"comfyui-workflow-templates-media-video==0.3.101\",\n     \"comfyui-workflow-templates-media-image==0.3.160\",\n     \"comfyui-workflow-templates-media-other==0.3.229\",\n-    \"comfyui-workflow-templates-media-assets-01==0.1.39\",\n+    \"comfyui-workflow-templates-media-assets-01==0.1.40\",\n ]\n \n [project.optional-dependencies]\n-json = [\"comfyui-workflow-templates-json==0.1.68\"]\n-assets = [\"comfyui-workflow-templates-media-assets-01==0.1.39\"]\n+json = [\"comfyui-workflow-templates-json==0.1.69\"]\n+assets = [\"comfyui-workflow-templates-media-assets-01==0.1.40\"]\n api = [\"comfyui-workflow-templates-media-api==0.3.84\"]\n video = [\"comfyui-workflow-templates-media-video==0.3.101\"]\n image = [\"comfyui-workflow-templates-media-image==0.3.160\"]\n other = [\"comfyui-workflow-templates-media-other==0.3.229\"]\n all = [\n-    \"comfyui-workflow-templates-json==0.1.68\",\n-    \"comfyui-workflow-templates-media-assets-01==0.1.39\",\n+    \"comfyui-workflow-templates-json==0.1.69\",\n+    \"comfyui-workflow-templates-media-assets-01==0.1.40\",\n     \"comfyui-workflow-templates-media-api==0.3.84\",\n     \"comfyui-workflow-templates-media-video==0.3.101\",\n     \"comfyui-workflow-templates-media-image==0.3.160\","
+    },
+    {
+      "sha": "a76ee9d81ad98145a468308e1d477e9613bad216",
+      "filename": "scripts/data/i18n.json",
+      "status": "modified",
+      "additions": 49,
+      "deletions": 0,
+      "changes": 49,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/scripts%2Fdata%2Fi18n.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/scripts%2Fdata%2Fi18n.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/scripts%2Fdata%2Fi18n.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -7005,6 +7005,25 @@\n           \"pt-BR\",\n           \"fa\"\n         ]\n+      },\n+      \"video_minimax_h3_fun_controlnet_union\": {\n+        \"missing_fields\": [\n+          \"title\",\n+          \"description\"\n+        ],\n+        \"missing_languages\": [\n+          \"zh\",\n+          \"zh-TW\",\n+          \"ja\",\n+          \"ko\",\n+          \"es\",\n+          \"fr\",\n+          \"ru\",\n+          \"tr\",\n+          \"ar\",\n+          \"pt-BR\",\n+          \"fa\"\n+        ]\n       }\n     },\n     \"outdated_translations\": {\n@@ -26051,6 +26070,36 @@\n         \"pt-BR\": \"Gere ativos visuais refinados e otimize prompts de análise de imagens com o GPT-6 Astra, um modelo de IA que se destaca em tarefas de visão computacional enquanto se adapta ao seu estilo preferido e imagens de referência. Insira seus visuais de origem e direção criativa para receber saídas refinadas e imediatamente utilizáveis, com detalhes precisos e mensagens concisas. Ideal para aprimorar fluxos de trabalho de engenharia de prompts, preparar conjuntos de dados de imagens para análise e produzir conteúdo visual pronto para apresentações que atenda aos padrões profissionais.\",\n         \"fa\": \"با GPT-6 Astra دارایی‌های بصری صیقل‌یافته تولید کنید و پرامپت‌های تحلیل تصویر را بهینه کنید؛ این مدل هوش مصنوعی در وظایف بینایی کامپیوتر عالی عمل می‌کند و در عین حال با سبک و تصاویر مرجع دلخواه شما سازگار می‌شود. تصاویر منبع و جهت خلاقانه خود را وارد کنید تا خروجی‌های پالایش‌شده و قابل استفاده فوری با جزئیات دقیق و پیام‌های مختصر دریافت کنید. ایده‌آل برای بهبود گردش‌کارهای مهندسی پرامپت، آماده‌سازی مجموعه‌داده‌های تصویری برای تحلیل، و تولید محتوای بصری آماده ارائه که استانداردهای حرفه‌ای را برآورده می‌کند.\"\n       }\n+    },\n+    \"video_minimax_h3_fun_controlnet_union\": {\n+      \"title\": {\n+        \"en\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"zh\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"zh-TW\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"ja\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"ko\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"es\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"fr\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"ru\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"tr\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"ar\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"pt-BR\": \"MiniMax H3 Fun ControlNet Union\",\n+        \"fa\": \"MiniMax H3 Fun ControlNet Union\"\n+      },\n+      \"description\": {\n+        \"en\": \"Generate videos from a pose reference video using MiniMax-H3 with a ControlNet-Union checkpoint, preserving the input's motion and structure while applying your prompt. Ideal for character animation, motion transfer, and choreography visualization projects. This workflow is for pose control only\",\n+        \"zh\": \"使用MiniMax-H3和ControlNet-Union检查点，从姿态参考视频生成视频，在应用提示词的同时保留输入的运动和结构。非常适合角色动画、运动迁移和编舞可视化项目。此工作流仅用于姿态控制。\",\n+        \"zh-TW\": \"使用MiniMax-H3和ControlNet-Union檢查點，從姿態參考影片產生影片，在套用提示詞的同時保留輸入的運動和結構。非常適合角色動畫、動作遷移和編舞視覺化專案。此工作流程僅用於姿態控制。\",\n+        \"ja\": \"MiniMax-H3とControlNet-Unionチェックポイントを使用して、ポーズ参照ビデオからビデオを生成し、プロンプトを適用しながら入力の動きと構造を保持します。キャラクターアニメーション、モーション転送、振付の可視化プロジェクトに最適です。このワークフローはポーズ制御専用です。\",\n+        \"ko\": \"MiniMax-H3와 ControlNet-Union 체크포인트를 사용하여 포즈 참조 비디오에서 비디오를 생성하고, 프롬프트를 적용하면서 입력의 동작과 구조를 보존합니다. 캐릭터 애니메이션, 모션 전송, 안무 시각화 프로젝트에 적합합니다. 이 워크플로는 포즈 제어 전용입니다.\",\n+        \"es\": \"Genera vídeos a partir de un vídeo de referencia de pose utilizando MiniMax-H3 con un checkpoint de ControlNet-Union, preservando el movimiento y la estructura de la entrada mientras aplicas tu prompt. Ideal para animación de personajes, transferencia de movimiento y proyectos de visualización de coreografía. Este flujo de trabajo es solo para control de pose.\",\n+        \"fr\": \"Générez des vidéos à partir d'une vidéo de référence de pose à l'aide de MiniMax-H3 avec un checkpoint ControlNet-Union, en préservant le mouvement et la structure de l'entrée tout en appliquant votre prompt. Idéal pour l'animation de personnages, le transfert de mouvement et les projets de visualisation chorégraphique. Ce flux de travail est destiné uniquement au contrôle de pose.\",\n+        \"ru\": \"Генерируйте видео из эталонного видео с позой с помощью MiniMax-H3 и чекпоинта ControlNet-Union, сохраняя движение и структуру входных данных при применении вашего промпта. Идеально подходит для анимации персонажей, переноса движений и проектов визуализации хореографии. Этот рабочий процесс предназначен только для управления позой.\",\n+        \"tr\": \"MiniMax-H3 ve bir ControlNet-Union kontrol noktası kullanarak poz referans videosundan videolar oluşturun; isteminizi uygularken girdinin hareketini ve yapısını koruyun. Karakter animasyonu, hareket aktarımı ve koreografi görselleştirme projeleri için idealdir. Bu iş akışı yalnızca poz kontrolü içindir.\",\n+        \"ar\": \"قم بتوليد فيديوهات من فيديو مرجعي للوضعية باستخدام MiniMax-H3 مع نقطة تفتيش ControlNet-Union، مع الحفاظ على حركة وبنية الإدخال أثناء تطبيق الموجه الخاص بك. مثالي لتحريك الشخصيات ونقل الحركة ومشاريع تصور تصميم الرقصات. سير العمل هذا مخصص للتحكم في الوضعية فقط.\",\n+        \"pt-BR\": \"Gere vídeos a partir de um vídeo de referência de pose usando MiniMax-H3 com um checkpoint ControlNet-Union, preservando o movimento e a estrutura da entrada enquanto aplica seu prompt. Ideal para animação de personagens, transferência de movimento e projetos de visualização de coreografia. Este fluxo de trabalho é apenas para controle de pose.\",\n+        \"fa\": \"با استفاده از MiniMax-H3 و چک‌پوینت ControlNet-Union، ویدیوهایی از ویدیوی مرجع حالت تولید کنید و در حین اعمال پرامپت، حرکت و ساختار ورودی را حفظ کنید. ایده‌آل برای انیمیشن شخصیت، انتقال حرکت و پروژه‌های تجسم‌سازی رقص. این گردش‌کار فقط برای کنترل حالت است.\"\n+      }\n     }\n   },\n   \"tags\": {"
+    },
+    {
+      "sha": "10b9b08030caa83354bb7165bda113694f043c9c",
+      "filename": "templates/index.ar.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ar.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ar.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.ar.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "fdb47a1a1c79a048534d05abfc6add75ddfd8af5",
+      "filename": "templates/index.es.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.es.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.es.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.es.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "df3f06bf1b308723d6d13f5ce4d71f058fd7e389",
+      "filename": "templates/index.fa.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.fa.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.fa.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.fa.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "8f14e78a66b46ed8a517d476b82ceee76558c524",
+      "filename": "templates/index.fr.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.fr.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.fr.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.fr.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "0577a24ef14a5dcacca4bb40531f058e38856ae5",
+      "filename": "templates/index.ja.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ja.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ja.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.ja.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "c2f3f515b7d01dc408d705945212bf3726fd0078",
+      "filename": "templates/index.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "a9221741c0a96f4266237226cddb08c80bc3218f",
+      "filename": "templates/index.ko.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ko.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ko.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.ko.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "023e622067af122392252ffa15fa1de425b4bc90",
+      "filename": "templates/index.mcp.json",
+      "status": "modified",
+      "additions": 574,
+      "deletions": 556,
+      "changes": 1130,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.mcp.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.mcp.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.mcp.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "0f6999c873ba99da9ac392a8bc4ace8e162ee797",
+      "filename": "templates/index.pt-BR.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.pt-BR.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.pt-BR.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.pt-BR.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "0abfb248fa15335c07e266640dd63546d8ee6221",
+      "filename": "templates/index.ru.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ru.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.ru.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.ru.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "84bbdc5b42ca72b238178ba9a67e987276ea60bc",
+      "filename": "templates/index.tr.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.tr.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.tr.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.tr.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "0ffb993286982d0dab1d1b49c578dc442a705b88",
+      "filename": "templates/index.zh-TW.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.zh-TW.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.zh-TW.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.zh-TW.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "a10984b64154877d43c70c4e710a3f196bc23c61",
+      "filename": "templates/index.zh.json",
+      "status": "modified",
+      "additions": 637,
+      "deletions": 609,
+      "changes": 1246,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.zh.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Findex.zh.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Findex.zh.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "420c6dad2c5bc25b3602ef6a6e0cd07a616abfd4",
+      "filename": "templates/video_minimax_h3_fun_controlnet_union-1.webp",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union-1.webp",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union-1.webp",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Fvideo_minimax_h3_fun_controlnet_union-1.webp?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "eb966cb8114fd7b6f0e454b12e6dd153f75c8006",
+      "filename": "templates/video_minimax_h3_fun_controlnet_union-2.webp",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union-2.webp",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union-2.webp",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Fvideo_minimax_h3_fun_controlnet_union-2.webp?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "6a68021afad5f29e17f1db350741e77a031a2703",
+      "filename": "templates/video_minimax_h3_fun_controlnet_union.json",
+      "status": "added",
+      "additions": 3402,
+      "deletions": 0,
+      "changes": 3402,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates%2Fvideo_minimax_h3_fun_controlnet_union.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/templates%2Fvideo_minimax_h3_fun_controlnet_union.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096"
+    },
+    {
+      "sha": "d6b2c32815a4f0b584b1b309e70d20ddccba87e0",
+      "filename": "workflow_template_input_files.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "changes": 10,
+      "blob_url": "https://github.com/Comfy-Org/workflow_templates/blob/7c25a3c586484601f94b7e8f8b14c23b2c95a096/workflow_template_input_files.json",
+      "raw_url": "https://github.com/Comfy-Org/workflow_templates/raw/7c25a3c586484601f94b7e8f8b14c23b2c95a096/workflow_template_input_files.json",
+      "contents_url": "https://api.github.com/repos/Comfy-Org/workflow_templates/contents/workflow_template_input_files.json?ref=7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+      "patch": "@@ -2070,6 +2070,16 @@\n       ],\n       \"mime_type\": \"image/png\"\n     },\n+    {\n+      \"file_path\": \"input/dancer_field_pose.mp4\",\n+      \"url\": \"https://raw.githubusercontent.com/Comfy-Org/workflow_templates/refs/heads/main/input/dancer_field_pose.mp4\",\n+      \"display_name\": \"dancer_field_pose.mp4\",\n+      \"tags\": [\n+        \"input\",\n+        \"video\"\n+      ],\n+      \"mime_type\": \"video/mp4\"\n+    },\n     {\n       \"file_path\": \"input/dancing_capybara.png\",\n       \"url\": \"https://raw.githubusercontent.com/Comfy-Org/workflow_templates/refs/heads/main/input/dancing_capybara.png\","
+    }
+  ]
+}

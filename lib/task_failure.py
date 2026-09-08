@@ -98,6 +98,23 @@ NARRATION_DELIVERY_FAILURE_CODES: frozenset[str] = frozenset(
 # Stable failure code -> i18n errors key. The code is agent-facing and persisted
 # in the DB; the key resolves to zh/en/vi templates rendered at read time.
 FAILURE_CODE_KEYS: dict[str, str] = {
+    **{
+        code: code
+        for code in (
+            "codex_unavailable",
+            "codex_cancelled",
+            "codex_timeout",
+            "codex_tool_unsupported",
+            "codex_request_failed",
+            "codex_login_required",
+            "codex_models_unavailable",
+            "codex_image_unverified",
+            "codex_image_missing",
+            "codex_generation_failed",
+            "codex_empty_result",
+            "codex_invalid_json",
+        )
+    },
     **{code: code for code in CAPABILITY_FAILURE_CODES},
     **{code: code for code in REFERENCE_PROJECTION_FAILURE_CODES},
     **{code: code for code in NARRATION_DELIVERY_FAILURE_CODES},

@@ -15,6 +15,7 @@ def test_all_providers_registered():
         "ark-agent-plan",
         "grok",
         "openai",
+        "codex",
         "vidu",
         "dashscope",
         "minimax",
@@ -78,6 +79,8 @@ def test_optional_keys_cover_every_supported_lane_worker():
 def test_optional_keys_have_no_worker_for_unsupported_lane():
     """provider 不支持的 lane 不应声明其 *_max_workers，避免设置页渲染无效字段。"""
     for name, meta in PROVIDER_REGISTRY.items():
+        if meta.model_source is not None:
+            continue  # Dynamic capabilities can be unavailable until the account connects.
         supported_worker_keys = {_LANE_WORKER_KEY[m] for m in meta.media_types if m in _LANE_WORKER_KEY}
         for key in meta.optional_keys:
             if key in _LANE_WORKER_KEY.values():

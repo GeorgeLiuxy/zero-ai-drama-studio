@@ -18,10 +18,12 @@ SDK_ID = "sdk-e2e-1"
 
 @pytest.fixture
 async def manager(tmp_path, file_db_factory):
+    (tmp_path / "projects" / "demo").mkdir(parents=True)
     return SessionManager(
         project_root=tmp_path,
         meta_store=SessionMetaStore(session_factory=file_db_factory),
         event_log_store=EventLogStore(session_factory=file_db_factory),
+        session_factory=file_db_factory,
     )
 
 

@@ -334,6 +334,7 @@ class OptionsAssembler:
         provider_env = await self.build_provider_env_overrides()
         provider_env.update(
             {
+                "ARCREEL_AGENT_LOCALE": locale,
                 "ARCREEL_EMBEDDED_AGENT": "1",
                 "ARCREEL_API_BASE": (os.environ.get("ARCREEL_API_BASE") or "http://127.0.0.1:1241/api/v1").rstrip("/"),
                 "ARCREEL_API_TOKEN": (

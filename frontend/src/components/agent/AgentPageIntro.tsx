@@ -1,4 +1,4 @@
-import ClaudeColor from "@lobehub/icons/es/Claude/components/Color";
+import OpenAIMono from "@lobehub/icons/es/OpenAI/components/Mono";
 import { ArrowUpRight, Bot } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -28,7 +28,7 @@ export function AgentPageIntro({ onOpenExternalGuide }: AgentPageIntroProps) {
       >
         <div className="flex gap-3.5 border-b border-hairline-soft p-4 sm:border-b-0 sm:border-r">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] border border-hairline-soft bg-bg-grad-a/55">
-            <ClaudeColor size={22} />
+            <OpenAIMono size={22} />
           </div>
           <div className="min-w-0">
             <h3 className="text-[13.5px] font-medium text-text">{t("embedded_agent")}</h3>

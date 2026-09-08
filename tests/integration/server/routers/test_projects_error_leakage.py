@@ -1,5 +1,8 @@
 """projects 路由的未预期异常不泄漏内部细节。"""
 
+import pytest
+
+from lib.codex_runtime import CodexError
 from lib.i18n.zh import errors as zh_errors
 from server.routers import projects
 from tests.integration.server.routers.projects_router_support import (
@@ -217,6 +220,29 @@ class TestUnexpectedErrorsDoNotLeak:
             resp = client.post("/api/v1/projects/bad-schema/generate-overview")
             assert resp.status_code == 400
             assert resp.json()["detail"] == zh_errors.MESSAGES["overview_ai_response_invalid"]
+
+    @pytest.mark.parametrize("upload", [False, True])
+    def test_codex_overview_error_is_translated_without_internal_details(self, tmp_path, monkeypatch, upload):
+        class CodexFailingPM(_FakePM):
+            async def generate_overview(self, name):
+                raise CodexError(
+                    "codex_request_failed", upstream_error={"message": "private server path /secret/source"}
+                )
+
+        client = build_projects_client(monkeypatch, CodexFailingPM(tmp_path))
+        with client:
+            if upload:
+                response = client.post(
+                    "/api/v1/projects/ready/source", data={"content": "正文", "generate_overview": "true"}
+                )
+                assert response.status_code == 200
+                assert response.json()["success"] is True
+                assert response.json()["overview_error"] == zh_errors.MESSAGES["codex_request_failed"]
+            else:
+                response = client.post("/api/v1/projects/ready/generate-overview")
+                assert response.status_code == 502
+                assert response.json()["detail"] == zh_errors.MESSAGES["codex_request_failed"]
+            assert "/secret/source" not in response.text
 
     def test_generate_overview_invalid_project_name_maps_to_400_not_provider_error(self, tmp_path, monkeypatch):
         # get_project_path 抛出的非法项目名 ValueError（路径穿越等）不能被 generate_overview()

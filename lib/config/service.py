@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from lib.api_errors import UnprocessableError
 from lib.config.env_keys import ANTHROPIC_ENV_KEYS
-from lib.config.registry import PROVIDER_REGISTRY
+from lib.config.registry import PROVIDER_REGISTRY, codex_models_from_state, read_codex_state
 from lib.config.repository import ProviderConfigRepository, SystemSettingRepository
 from lib.db.repositories.credential_repository import CredentialRepository
 from lib.schema_guards import is_int
@@ -67,7 +69,49 @@ assert set(_ANTHROPIC_ENV_MAP.values()) == set(ANTHROPIC_ENV_KEYS), (
 )
 
 
-async def build_anthropic_env_dict(session: AsyncSession) -> dict[str, str]:
+def codex_agent_selection(settings: Mapping[str, str], state: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve Agent settings from the cached account catalog without probing a model."""
+    models: list[dict[str, Any]] = []
+    defaults: dict[str, str] = {}
+    default_model: str | None = None
+    for raw in state.get("models", []):
+        if not isinstance(raw, dict):
+            continue
+        model_id = raw.get("model") or raw.get("id")
+        if not isinstance(model_id, str) or not model_id:
+            continue
+        efforts = [
+            effort if isinstance(effort, str) else effort.get("reasoningEffort")
+            for effort in raw.get("supportedReasoningEfforts", [])
+            if isinstance(effort, (str, dict))
+        ]
+        efforts = list(dict.fromkeys(effort for effort in efforts if isinstance(effort, str) and effort))
+        models.append(
+            {"id": model_id, "display_name": raw.get("displayName") or model_id, "supported_reasoning_efforts": efforts}
+        )
+        defaults[model_id] = (
+            "low" if "low" in efforts else raw.get("defaultReasoningEffort") or next(iter(efforts), "low")
+        )
+        if raw.get("isDefault"):
+            default_model = model_id
+    model = settings.get("codex_agent_model", "").strip() or default_model or (models[0]["id"] if models else None)
+    effort = settings.get("codex_agent_reasoning_effort", "").strip() or defaults.get(model or "", "low")
+    selected = next((entry for entry in models if entry["id"] == model), None)
+    error_code = None
+    if not state.get("enabled") or not state.get("connected"):
+        error_code = state.get("error_code") or "codex_login_required"
+    elif selected is None:
+        error_code = "codex_models_unavailable"
+    elif effort not in selected["supported_reasoning_efforts"]:
+        error_code = "codex_reasoning_effort_unsupported"
+    return {"model": model, "reasoning_effort": effort, "models": models, "error_code": error_code}
+
+
+async def build_anthropic_env_dict(
+    session: AsyncSession,
+    *,
+    codex_state_reader: Callable[[], Mapping[str, Any]] = read_codex_state,
+) -> dict[str, str]:
     """从 DB 读 active credential，返回 {ENV_KEY: value} dict，**不写 os.environ**。
 
     返回值由 OptionsAssembler 的凭证注入（load_provider_env_overrides）注入到
@@ -80,10 +124,20 @@ async def build_anthropic_env_dict(session: AsyncSession) -> dict[str, str]:
 
     repo = AgentCredentialRepository(session)
     cred = await repo.get_active()
+    settings = await SystemSettingRepository(session).get_all()
+    backend = "codex" if settings.get("agent_backend") == "codex" else "claude"
+    selection = codex_agent_selection(settings, codex_state_reader()) if backend == "codex" else {}
+    runtime_env = {
+        "ARCREEL_AGENT_BACKEND": backend,
+        "ARCREEL_CODEX_AGENT_MODEL": selection.get("model") or settings.get("codex_agent_model", "").strip(),
+        "ARCREEL_CODEX_AGENT_EFFORT": selection.get("reasoning_effort")
+        or settings.get("codex_agent_reasoning_effort", "").strip()
+        or "low",
+    }
 
     if cred is not None:
-        settings = await SystemSettingRepository(session).get_all()
         return {
+            **runtime_env,
             "ANTHROPIC_API_KEY": cred.api_key or "",
             "ANTHROPIC_BASE_URL": cred.base_url or "",
             "ANTHROPIC_MODEL": cred.model or settings.get("anthropic_model", "").strip(),
@@ -96,8 +150,10 @@ async def build_anthropic_env_dict(session: AsyncSession) -> dict[str, str]:
         }
 
     # 无 active credential — 回退 system_settings（双轨期兼容）
-    settings = await SystemSettingRepository(session).get_all()
-    return {env_key: settings.get(db_key, "").strip() for db_key, env_key in _ANTHROPIC_ENV_MAP.items()}
+    return {
+        **runtime_env,
+        **{env_key: settings.get(db_key, "").strip() for db_key, env_key in _ANTHROPIC_ENV_MAP.items()},
+    }
 
 
 @dataclass
@@ -115,9 +171,50 @@ class ProviderStatus:
 
 
 class ConfigService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        codex_state_reader: Callable[[], Mapping[str, Any]] = read_codex_state,
+    ) -> None:
         self._provider_repo = ProviderConfigRepository(session)
         self._setting_repo = SystemSettingRepository(session)
+        self._codex_state_reader = codex_state_reader
+
+    async def get_agent_runtime(self) -> dict[str, Any]:
+        from lib.db.repositories.agent_credential_repo import AgentCredentialRepository
+
+        settings = await self.get_all_settings()
+        selection = codex_agent_selection(settings, self._codex_state_reader())
+        enabled = settings.get("agent_backend") == "codex"
+        if enabled:
+            ready = selection["error_code"] is None
+        else:
+            credential = await AgentCredentialRepository(self._setting_repo.session).get_active()
+            key = credential.api_key if credential is not None else settings.get("anthropic_api_key", "")
+            ready = bool(key and key.strip())
+            selection["error_code"] = None if ready else "missing_credentials"
+        return {"runtime": "codex" if enabled else "claude", "enabled": enabled, "ready": ready, **selection}
+
+    async def update_agent_runtime(self, changes: Mapping[str, Any]) -> dict[str, Any]:
+        settings = await self.get_all_settings()
+        updates: dict[str, str] = {}
+        if "enabled" in changes:
+            updates["agent_backend"] = "codex" if changes["enabled"] else "claude"
+        if "model" in changes:
+            updates["codex_agent_model"] = (changes["model"] or "").strip()
+        if "reasoning_effort" in changes:
+            updates["codex_agent_reasoning_effort"] = changes["reasoning_effort"].strip()
+        proposed = {**settings, **updates}
+        selection = codex_agent_selection(proposed, self._codex_state_reader())
+        if changes.get("enabled") or "model" in changes or "reasoning_effort" in changes:
+            if selection["error_code"]:
+                raise UnprocessableError(selection["error_code"])
+            updates["codex_agent_model"] = selection["model"]
+            updates["codex_agent_reasoning_effort"] = selection["reasoning_effort"]
+        for key, value in updates.items():
+            await self.set_setting(key, value)
+        return await self.get_agent_runtime()
 
     async def get_provider_config(self, provider: str) -> dict[str, str]:
         self._validate_provider(provider)
@@ -159,9 +256,19 @@ class ConfigService:
         for name, meta in PROVIDER_REGISTRY.items():
             has_active = name in active_creds
             configured = all_configured.get(name, [])
-            if has_active:
-                status: Literal["ready", "unconfigured", "error"] = "ready"
+            models = meta.effective_models if name != "codex" else {}
+            if name == "codex":
+                state = self._codex_state_reader()
+                models = codex_models_from_state(state)
+                status: Literal["ready", "unconfigured", "error"] = "unconfigured"
+                if state.get("enabled") and state.get("connected"):
+                    status = "ready"
+                elif state.get("enabled") and state.get("error_code"):
+                    status = "error"
                 missing: list[str] = []
+            elif has_active:
+                status = "ready"
+                missing = []
             else:
                 status = "unconfigured"
                 missing = list(meta.required_keys)
@@ -169,8 +276,7 @@ class ConfigService:
             # 用 __dict__ 而非 asdict 以免递归转换 pricing 后又被丢弃），再 deepcopy 其余可变容器
             # 字段（list/dict），避免返回值与全局 PROVIDER_REGISTRY 共享引用被调用方意外改写。
             models_dict = {
-                mid: deepcopy({k: v for k, v in mi.__dict__.items() if k != "pricing"})
-                for mid, mi in meta.models.items()
+                mid: deepcopy({k: v for k, v in mi.__dict__.items() if k != "pricing"}) for mid, mi in models.items()
             }
             statuses.append(
                 ProviderStatus(
@@ -178,8 +284,8 @@ class ConfigService:
                     display_name=meta.display_name,
                     description=meta.description,
                     status=status,
-                    media_types=list(meta.media_types),
-                    capabilities=list(meta.capabilities),
+                    media_types=sorted({mi.media_type for mi in models.values()}),
+                    capabilities=sorted({cap for mi in models.values() for cap in mi.capabilities}),
                     required_keys=list(meta.required_keys),
                     configured_keys=configured,
                     missing_keys=missing,

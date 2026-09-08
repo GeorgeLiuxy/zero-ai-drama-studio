@@ -395,7 +395,7 @@ async def _run_text_generation(
     try:
         return ToolOutcome(value=await call)
     except TextGenerationError as exc:
-        return ToolOutcome(problem=ToolProblem("generation_refused", str(exc)))
+        return ToolOutcome(problem=ToolProblem(exc.code, str(exc), action=exc.action, params=exc.params))
     except Exception as exc:
         return ToolOutcome(problem=ToolProblem("internal_error", f"{operation} 失败: {exc}"))
 
@@ -1028,7 +1028,7 @@ async def _run_draft(call: Awaitable[dict[str, Any]]) -> ToolOutcome[dict[str, A
     try:
         return ToolOutcome(value=await call)
     except DraftWorkflowError as exc:
-        return ToolOutcome(problem=ToolProblem(exc.code, exc.detail))
+        return ToolOutcome(problem=ToolProblem(exc.code, exc.detail, params=exc.params))
     except Exception as exc:
         return ToolOutcome(problem=ToolProblem("internal_error", str(exc)))
 

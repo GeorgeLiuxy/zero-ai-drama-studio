@@ -7,7 +7,7 @@ from lib.db.repositories.credential_repository import CredentialRepository
 
 @pytest.fixture
 def config_service(db_session: AsyncSession) -> ConfigService:
-    return ConfigService(db_session)
+    return ConfigService(db_session, codex_state_reader=lambda: {"enabled": False, "connected": False})
 
 
 async def test_get_all_providers_status_empty(config_service: ConfigService):
@@ -41,6 +41,37 @@ async def test_provider_becomes_ready(config_service: ConfigService, db_session:
     aistudio = next(s for s in statuses if s.name == "gemini-aistudio")
     assert aistudio.status == "ready"
     assert aistudio.missing_keys == []
+
+
+@pytest.mark.parametrize(
+    ("enabled", "connected", "error_code", "expected_status"),
+    [(True, True, None, "ready"), (False, True, None, "unconfigured"), (True, False, "login_required", "error")],
+)
+async def test_codex_status_uses_cached_connection_without_credentials(
+    db_session: AsyncSession, enabled: bool, connected: bool, error_code: str | None, expected_status: str
+):
+    state = {
+        "enabled": enabled,
+        "connected": connected,
+        "error_code": error_code,
+        "models": [{"model": "account-model", "isDefault": True}],
+        "image_generation": True,
+    }
+    svc = ConfigService(db_session, codex_state_reader=lambda: state)
+    statuses = await svc.get_all_providers_status()
+    codex = next(status for status in statuses if status.name == "codex")
+
+    assert codex.status == expected_status
+    assert codex.required_keys == codex.missing_keys == codex.configured_keys == []
+    assert codex.models is not None
+    if expected_status == "ready":
+        assert set(codex.models) == {"account-model", "gpt-image-2"}
+        assert codex.media_types == ["image", "text"]
+        assert "text_to_image" in codex.capabilities
+        assert "pricing" not in codex.models["account-model"]
+    else:
+        assert codex.models == {}
+        assert codex.media_types == []
 
 
 async def test_get_provider_config(config_service: ConfigService):

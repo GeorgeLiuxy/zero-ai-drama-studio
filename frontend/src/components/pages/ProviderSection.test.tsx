@@ -179,6 +179,23 @@ describe("ProviderSection", () => {
     expect(within(nav()).queryByText("Gemini AI Studio（中文）")).not.toBeInTheDocument();
   });
 
+  it("opens the subscription panel for codex without requesting API key credentials", async () => {
+    vi.spyOn(API, "getCodexConnection").mockResolvedValue({
+      enabled: false,
+      connected: false,
+      plan_type: null,
+      models_count: 0,
+      image_generation: false,
+      error_code: null,
+    });
+    renderAt("/app/settings?provider=codex");
+
+    expect(await screen.findByRole("button", { name: "连接订阅" })).toBeEnabled();
+    expect(screen.getByText("codex login")).toBeInTheDocument();
+    expect(API.getProviderConfig).not.toHaveBeenCalled();
+    expect(API.listCredentials).not.toHaveBeenCalled();
+  });
+
   it("keeps the catalog rendered while the language-triggered refetch is in flight", async () => {
     let releaseRefetch: (() => void) | null = null;
     vi.spyOn(API, "getProviders").mockImplementation(() => {

@@ -237,7 +237,9 @@ def _build_kling(config: LoadedConfig, model_id: str | None, *, media_type: str)
         }
     if media_type == "image":
         # 两栖别名键读 registry api_model_name 发真实 API 名；video backend 不接受该参数，仅 image 注入。
-        model_info = config.provider_meta.models.get(model_id) if (config.provider_meta and model_id) else None
+        model_info = (
+            config.provider_meta.effective_models.get(model_id) if (config.provider_meta and model_id) else None
+        )
         if model_info is not None and model_info.api_model_name:
             kwargs["api_model_name"] = model_info.api_model_name
     base_url = _resolve_base_url(config)
@@ -291,6 +293,10 @@ def _text_simple_spec(provider_id: str) -> ProviderSpec:
         registry_backend=provider_id,
         build_backend=partial(_build_text_simple, registry_backend=provider_id),
     )
+
+
+def _build_codex(config: LoadedConfig, model_id: str | None, *, media_type: str) -> Any:
+    return _media_create_backend(media_type)("codex", model=model_id)
 
 
 _TEXT_GEMINI_REGISTRY_BACKEND = "gemini"
@@ -440,6 +446,17 @@ PROVIDER_SPEC_REGISTRY[("agnes", "video")] = _simple_spec("agnes", "video")
 # agnes_shared），故归简单文本族（registry_backend = "agnes"），不并入 OpenAI-compat 别名映射。
 _TEXT_SIMPLE_PROVIDERS = ("ark", "ark-agent-plan", "grok", "agnes")
 PROVIDER_SPEC_REGISTRY.update({(p, "text"): _text_simple_spec(p) for p in _TEXT_SIMPLE_PROVIDERS})
+PROVIDER_SPEC_REGISTRY.update(
+    {
+        ("codex", media_type): ProviderSpec(
+            provider_id="codex",
+            media_type=media_type,
+            registry_backend="codex",
+            build_backend=partial(_build_codex, media_type=media_type),
+        )
+        for media_type in ("text", "image")
+    }
+)
 PROVIDER_SPEC_REGISTRY.update(
     {
         ("gemini-aistudio", "text"): _text_gemini_spec("gemini-aistudio", build=_build_text_gemini_aistudio),

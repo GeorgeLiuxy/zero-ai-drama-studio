@@ -190,7 +190,7 @@ async def _enumerate_candidates(
         if provider_id not in ready_providers:
             continue
         provider_names[provider_id] = translate_or(f"provider_name_{provider_id}", meta.display_name, locale)
-        for model_id, model_info in meta.models.items():
+        for model_id, model_info in meta.effective_models.items():
             if model_info.hidden:
                 continue
             candidates.append(
@@ -364,6 +364,7 @@ async def get_system_config(
     narration_speed = ConfigService.parse_narration_speed(all_s.get("narration_speed", ""))
 
     settings: dict[str, Any] = {
+        "agent_ready": (await svc.get_agent_runtime())["ready"],
         "default_video_backend": all_s.get("default_video_backend", ""),
         "default_video_backend_i2v": all_s.get("default_video_backend_i2v", ""),
         "default_video_backend_r2v": all_s.get("default_video_backend_r2v", ""),

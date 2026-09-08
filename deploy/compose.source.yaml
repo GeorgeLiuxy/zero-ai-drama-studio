@@ -1,0 +1,10 @@
+services:
+  arcreel:
+    image: arcreel:local
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      UV_NO_DEV: "1"
+    healthcheck:
+      start_period: 120s

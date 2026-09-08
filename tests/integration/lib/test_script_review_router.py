@@ -154,6 +154,21 @@ class TestScriptReviewRouter:
                 is True
             )
 
+            # 未标记的混合发声也必须报告，修复真实内容后才可确认。
+            rejected = client.post(f"{base}/confirm")
+            assert rejected.status_code == 409
+            detail = rejected.json()["detail"]
+            assert detail["unit_id"] == "E1S01"
+            assert detail["admissions"][0]["problems"][0]["code"] == "mixed_speech"
+            scene = body["content"]["scenes"][0]
+            split = [
+                {**scene, "scene_id": f"E1S0{index + 1}", "utterances": [utterance]}
+                for index, utterance in enumerate(scene["utterances"])
+            ]
+            saved = client.put(f"{base}/content", json={**body["content"], "scenes": split})
+            assert saved.status_code == 200
+            assert [unit["utterances"][0] for unit in saved.json()["content"]["scenes"]] == scene["utterances"]
+
             # 确认 → confirmed，prompt_authoring 放行
             confirmed = client.post(f"{base}/confirm")
             assert confirmed.status_code == 200

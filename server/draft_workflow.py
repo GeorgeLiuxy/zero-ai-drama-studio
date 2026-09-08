@@ -16,6 +16,7 @@ from lib import script_review
 from lib.artifact_manifest import ArtifactBasis
 from lib.async_thread import run_sync_transaction
 from lib.config.resolver import ConfigResolver
+from lib.content_digest import PREFIXED_DIGEST_RE
 from lib.draft_quarantine import (
     DOC_TYPE_TO_QUARANTINE_KIND,
     PROMOTE_TOOL_NAME,
@@ -118,10 +119,11 @@ class DiscardDraftRequest(_DraftRequest):
 
 
 class DraftWorkflowError(Exception):
-    def __init__(self, code: str, detail: str):
+    def __init__(self, code: str, detail: str, *, params: dict[str, Any] | None = None):
         super().__init__(detail)
         self.code = code
         self.detail = detail
+        self.params = params
 
 
 class ReferenceDraftRevalidation(NamedTuple):
@@ -1201,11 +1203,21 @@ class DraftWorkflow:
             meta = {**meta, "source": source}
         if accepts_formal_revision:
             actual_formal_revision = script_review.content_fingerprint(self._formal_path(episode, resolved))
-            if accept_formal_revision != actual_formal_revision:
+            expected_formal_revision = accept_formal_revision
+            # The known SHA-256 envelope names the same digest; unknown formats
+            # remain opaque and cannot match a current raw fingerprint.
+            if isinstance(expected_formal_revision, str) and PREFIXED_DIGEST_RE.fullmatch(expected_formal_revision):
+                expected_formal_revision = expected_formal_revision.split(":", 1)[1]
+            if expected_formal_revision != actual_formal_revision:
                 raise DraftWorkflowError(
                     "formal_revision_conflict",
                     "formal document changed again: "
                     f"expected {accept_formal_revision}, actual {actual_formal_revision}",
+                    params={
+                        "revision_field": "formal_revision",
+                        "expected_revision": accept_formal_revision,
+                        "actual_revision": actual_formal_revision,
+                    },
                 )
             meta = {**meta, "base_fingerprint": actual_formal_revision}
         if before_commit is not None:

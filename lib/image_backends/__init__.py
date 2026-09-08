@@ -66,3 +66,8 @@ from lib.image_backends.agnes import AgnesImageBackend
 from lib.providers import PROVIDER_AGNES
 
 register_backend(PROVIDER_AGNES, AgnesImageBackend)
+
+from lib.image_backends.codex import CodexImageBackend
+from lib.providers import PROVIDER_CODEX
+
+register_backend(PROVIDER_CODEX, CodexImageBackend)

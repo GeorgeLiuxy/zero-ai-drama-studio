@@ -7,6 +7,7 @@ import type { CatalogRefreshResult } from "@/hooks/useProviderCatalog";
 import { useAppStore } from "@/stores/app-store";
 import { ProviderIcon } from "@/components/ui/ProviderIcon";
 import { ProviderDetail } from "./ProviderDetail";
+import { CodexProviderDetail } from "./CodexProviderDetail";
 import { CustomProviderSection } from "./settings/CustomProviderSection";
 import { CustomProviderDetail } from "./settings/CustomProviderDetail";
 import { CustomProviderForm } from "./settings/CustomProviderForm";
@@ -207,7 +208,11 @@ export function ProviderSection() {
       <div className="min-w-0 flex-1">
         {selection?.kind === "preset" && (
           <div className="p-6">
-            <ProviderDetail providerId={selection.id} onSaved={refreshAfterSave} />
+            {selection.id === "codex" ? (
+              <CodexProviderDetail onSaved={refreshAfterSave} />
+            ) : (
+              <ProviderDetail providerId={selection.id} onSaved={refreshAfterSave} />
+            )}
           </div>
         )}
         {selection?.kind === "custom" && (

@@ -359,7 +359,7 @@ def builtin_video_audio_track(provider_id: str, model_id: str, *, capability: Vi
     ``synthesize_video_capabilities``，不经本函数）、该 model 不是视频模型、backend 未声明能力。
     """
     provider_meta = PROVIDER_REGISTRY.get(provider_id)
-    model_info = provider_meta.models.get(model_id) if provider_meta is not None else None
+    model_info = provider_meta.effective_models.get(model_id) if provider_meta is not None else None
     if model_info is None or model_info.media_type != "video":
         return None
     try:
@@ -672,7 +672,7 @@ def resolve_raw_supported_durations(project: dict, caps: dict | None = None) -> 
     if ids is not None:
         provider_meta = PROVIDER_REGISTRY.get(ids[0])
         if provider_meta:
-            model_info = provider_meta.models.get(ids[1])
+            model_info = provider_meta.effective_models.get(ids[1])
             if model_info and model_info.supported_durations:
                 return list(model_info.supported_durations)
     return None
@@ -773,7 +773,7 @@ def _ensure_text_model_vision_capable(task_type: TextTaskType, provider_id: str,
     仅对 PROVIDER_REGISTRY 中登记的模型判定；registry 之外（自定义供应商等）无逐模型
     能力事实，放行交由供应商 API 把关，不做猜测。"""
     meta = PROVIDER_REGISTRY.get(provider_id)
-    model_info = meta.models.get(model_id) if meta else None
+    model_info = meta.effective_models.get(model_id) if meta else None
     if model_info is not None and "vision" not in model_info.capabilities:
         raise VisionCapabilityError(task_type=task_type, provider_id=provider_id, model_id=model_id)
 
@@ -1322,7 +1322,7 @@ class ConfigResolver:
         provider_id, model_id = selected.provider_id, selected.model_id
         if not is_custom_provider(provider_id):
             provider_meta = PROVIDER_REGISTRY.get(provider_id)
-            model_info = provider_meta.models.get(model_id) if provider_meta else None
+            model_info = provider_meta.effective_models.get(model_id) if provider_meta else None
             if model_info is None or model_info.media_type != "video":
                 raise _video_bucket_reference_unavailable(capability, provider_id, model_id)
             return None
@@ -1602,7 +1602,7 @@ class ConfigResolver:
             provider_meta = PROVIDER_REGISTRY.get(provider_id)
             if provider_meta is None:
                 raise ValueError(f"provider not in PROVIDER_REGISTRY: {provider_id}")
-            model_info = provider_meta.models.get(model_id)
+            model_info = provider_meta.effective_models.get(model_id)
             if model_info is None:
                 raise ValueError(f"model not found in registry: {provider_id}/{model_id}")
             supported_durations = list(model_info.supported_durations or [])
@@ -1807,7 +1807,7 @@ class ConfigResolver:
         for provider_id, meta in PROVIDER_REGISTRY.items():
             if provider_id not in ready:
                 continue
-            for model_id, model_info in meta.models.items():
+            for model_id, model_info in meta.effective_models.items():
                 if model_info.media_type == media_type and model_info.default:
                     return provider_id, model_id
 

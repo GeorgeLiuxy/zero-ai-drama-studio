@@ -89,6 +89,15 @@ export interface ConnectivityCheckResult {
   message: string;
 }
 
+export interface CodexConnectionStatus {
+  enabled: boolean;
+  connected: boolean;
+  plan_type: string | null;
+  models_count: number;
+  image_generation: boolean;
+  error_code: string | null;
+}
+
 export interface ProviderCredential {
   id: number;
   provider: string;

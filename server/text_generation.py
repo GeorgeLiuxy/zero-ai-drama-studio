@@ -84,7 +84,7 @@ from lib.script_models import (
     build_reference_units_script_plan_model,
 )
 from lib.script_plan_entries import SCOPE_ALL, SCOPE_STALE, ScriptPlanEntryError
-from lib.speech_composition import admit_script_unit
+from lib.speech_composition import SpeechAdmission, admit_script_unit
 from lib.speech_rate import project_speech_rate_override
 from lib.text_backends.base import DEFAULT_MAX_OUTPUT_TOKENS, TextTaskType
 from lib.text_backends.base import TextGenerationRequest as BackendTextGenerationRequest
@@ -264,6 +264,19 @@ async def _run_compensable_quarantine(
 
 class TextGenerationError(Exception):
     """Expected refusal from a text-generation handler."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "generation_refused",
+        action: str | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.action = action
+        self.params = params
 
 
 def _draft_file_revision(path: Path) -> str | None:
@@ -735,6 +748,13 @@ async def confirm_script_review(
     try:
         state = await ScriptReviewService(projects, config_resolver=config_resolver).confirm(project_name, episode)
     except ScriptReviewError as exc:
+        if exc.admissions:
+            raise TextGenerationError(
+                f"❌ 无法完成 script_plan 内容确认（{exc.code}）\n{_speech_admission_result_text(exc.admissions)}",
+                code="speech_admission_refused",
+                action="fix_input",
+                params=exc.speech_admission_params(),
+            ) from exc
         raise TextGenerationError(f"❌ 无法完成 script_plan 内容确认（{exc.code}）：{exc.message or exc.code}") from exc
     return TextGenerationResult(
         f"✅ 第 {episode} 集 script_plan 已确认，prompt_authoring 视觉生成已放行（status={state['status']}）"
@@ -1229,7 +1249,31 @@ def _drama_script_plan_result_text(script_plan_path: Path, scenes: list[dict], *
     """drama script_plan 的落盘回执。``action`` 是「生成」/「晋升」——两条路的统计段同一出口，
     只在动作词上分叉，Agent 因此按同一种格式读产出与晋升两次结果。
     """
-    return f"✅ 规范化剧本{action}（结构化内容）已保存: {script_plan_path}\n📊 生成统计: {len(scenes)} 个分镜"
+    from server.services.script_review import script_plan_speech_admissions
+
+    admissions = script_plan_speech_admissions("drama", {"scenes": scenes})
+    review = (
+        f"{translate('script_plan_saved_review_blocked')}\n{_speech_admission_result_text(admissions)}"
+        if admissions
+        else translate("script_plan_saved_review_pending")
+    )
+    return f"✅ 规范化剧本{action}（结构化内容）已保存: {script_plan_path}\n📊 生成统计: {len(scenes)} 个分镜\n{review}"
+
+
+def _speech_admission_result_text(admissions: tuple[SpeechAdmission, ...]) -> str:
+    """Expose all repair coordinates without repeating the script's spoken content."""
+    lines = []
+    for admission in admissions:
+        for problem in admission.problems:
+            locations = [
+                ".".join(map(str, location.path)) + (f" (line={location.line})" if location.line is not None else "")
+                for location in problem.locations
+            ]
+            lines.append(
+                f"- {problem.unit_id}: {problem.code.value}; reason={problem.reason.value}; "
+                f"locations={', '.join(locations)}; next_action={problem.action.value}"
+            )
+    return "\n".join([*lines, translate("script_plan_speech_repair_hint")])
 
 
 def _narration_script_plan_result_text(script_plan_path: Path, segments: list[dict], *, action: str) -> str:

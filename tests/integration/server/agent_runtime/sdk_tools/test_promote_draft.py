@@ -113,7 +113,7 @@ async def test_split_reference_video_units_quarantines_each_violation_class(
     report = out["content"][0]["text"]
     assert f"[{code}]" in report
     assert "unit E1U01" in report
-    assert str(rv_quarantine_path(fake_ctx)) in report
+    assert str(rv_quarantine_path(fake_ctx)) in json.loads(report)["problem"]["detail"]
     assert "promote_draft" in report
 
 
@@ -1313,7 +1313,7 @@ async def test_split_narration_segments_quarantines_violation_instead_of_discard
 
     assert out.get("is_error") is True
     report = out["content"][0]["text"]
-    assert str(nr_quarantine_path(fake_ctx)) in report
+    assert str(nr_quarantine_path(fake_ctx)) in json.loads(report)["problem"]["detail"]
     assert "[duration_off_tier]" in report
     assert "[unregistered_asset]" in report
     assert "segment E1S01" in report

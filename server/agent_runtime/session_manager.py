@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Callable
+from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, ClassVar, Optional
@@ -16,7 +16,7 @@ from uuid import uuid4
 
 from lib.agent_memory_paths import project_memory_dir
 from lib.db.base import DEFAULT_USER_ID
-from lib.i18n import DEFAULT_LOCALE
+from lib.i18n import DEFAULT_LOCALE, _
 from lib.logging_config import resolve_log_dir
 from lib.logging_utils import redact_diagnostic_text
 from lib.path_safety import PathTraversalError, safe_join
@@ -61,6 +61,7 @@ from server.sse_channel import IDLE, EvictNonCriticalAndSignal, SseChannel
 logger = logging.getLogger(__name__)
 
 from claude_agent_sdk import ClaudeSDKClient
+from claude_agent_sdk import list_sessions as list_sdk_sessions
 from claude_agent_sdk.types import (
     PermissionResultAllow,
     PermissionResultDeny,
@@ -69,7 +70,7 @@ from claude_agent_sdk.types import (
 from lib.config.service import ConfigService
 from lib.db import async_session_factory
 from lib.ledger import Ledger
-from lib.providers import PROVIDER_ANTHROPIC
+from lib.providers import PROVIDER_ANTHROPIC, PROVIDER_CODEX
 
 SDK_AVAILABLE = True
 
@@ -220,6 +221,7 @@ class ManagedSession:
     initial_user_entry_error: Exception | None = None
     last_user_prompt: str = ""
     assistant_model: str = ""
+    assistant_provider: str = PROVIDER_ANTHROPIC
     interrupt_requested: bool = False
     last_activity: float | None = None  # updated on every send/receive
     _cleanup_task: asyncio.Task | None = None  # current cleanup timer (idle TTL or terminal delay)
@@ -343,7 +345,13 @@ class SessionManager:
         sandbox_enabled: bool = True,
         event_log_store: EventLogStore | None = None,
         sdk_id_timeout: float = 60.0,
+        codex_client_factory: Callable[..., Any] | None = None,
+        provider_env_loader: Callable[[], Awaitable[dict[str, str]]] | None = None,
+        session_factory: Any = None,
     ):
+        self._codex_client_factory = codex_client_factory
+        if session_factory is not None:
+            self._session_factory = session_factory
         self.event_log_store = event_log_store or EventLogStore()
         # 新会话等待 CLI init 上报 sdk_session_id 的上限；超时即判启动失败。
         self._sdk_id_timeout = sdk_id_timeout
@@ -405,7 +413,31 @@ class SessionManager:
             resolve_project_cwd=self._resolve_project_cwd,
             session_factory_provider=lambda: getattr(self, "_session_factory", None),
             user_id_provider=lambda: getattr(self, "_user_id", DEFAULT_USER_ID),
+            provider_env_loader=provider_env_loader,
         )
+
+    def build_agent_client(self, options: Any, project_name: str) -> Any:
+        """Bind the selected conversation engine to this project's tool scope."""
+        if (getattr(options, "env", None) or {}).get("ARCREEL_AGENT_BACKEND") != "codex":
+            return ClaudeSDKClient(options=options)
+        factory = self._codex_client_factory
+        if factory is None:
+            from server.agent_runtime.codex_client import CodexAgentClient
+
+            factory = CodexAgentClient
+        return factory(
+            options=options,
+            project_name=project_name,
+            projects_root=self.projects_root,
+            user_id=getattr(self, "_user_id", DEFAULT_USER_ID),
+        )
+
+    @staticmethod
+    def configured_agent_identity(options: Any) -> tuple[str, str]:
+        env = getattr(options, "env", None) or {}
+        if env.get("ARCREEL_AGENT_BACKEND") == "codex":
+            return PROVIDER_CODEX, env.get("ARCREEL_CODEX_AGENT_MODEL", "")
+        return PROVIDER_ANTHROPIC, resolve_configured_assistant_model(env)
 
     def configure_sandbox_runtime(self, *, in_docker: bool, sandbox_enabled: bool) -> None:
         """startup 期注入平台运行时事实（Docker 嵌套、内核沙箱可用性）。
@@ -603,10 +635,10 @@ class SessionManager:
                 session_id=None,
                 sdk_stderr=sdk_stderr,
             ) from exc
-        assistant_model = resolve_configured_assistant_model(getattr(options, "env", None))
+        assistant_provider, assistant_model = self.configured_agent_identity(options)
 
         actor = SessionActor(
-            client_factory=lambda: ClaudeSDKClient(options=options),
+            client_factory=lambda: self.build_agent_client(options, project_name),
             on_message=self._make_actor_message_callback(managed_ref),
         )
 
@@ -616,6 +648,7 @@ class SessionManager:
             status="running",
             project_name=project_name,
             assistant_model=assistant_model,
+            assistant_provider=assistant_provider,
         )
         if user_entry is not None:
             managed.pending_initial_user_entry = {"entry": user_entry, "client_key": client_key}
@@ -927,6 +960,26 @@ class SessionManager:
                     stderr=startup_stderr,
                     session_id=None if resumable else meta.id,
                 )
+                from server.agent_runtime.codex_history import session_runtime_overrides
+
+                store = self._build_session_store()
+                cwd = getattr(options, "cwd", None) or str(self._resolve_project_cwd(meta.project_name))
+                overrides = await session_runtime_overrides(store, cwd, meta.id)
+                if not overrides:
+                    legacy_sessions = await asyncio.to_thread(
+                        list_sdk_sessions, directory=str(cwd), include_worktrees=False
+                    )
+                    legacy_ids = {item.session_id for item in legacy_sessions}
+                    if meta.id in legacy_ids:
+                        overrides = {"ARCREEL_AGENT_BACKEND": "claude"}
+                    elif meta.fork_parent_session_id:
+                        overrides = await session_runtime_overrides(store, cwd, meta.fork_parent_session_id)
+                        if not overrides and meta.fork_parent_session_id in legacy_ids:
+                            overrides = {"ARCREEL_AGENT_BACKEND": "claude"}
+                if overrides:
+                    options.env = {**(getattr(options, "env", None) or {}), **overrides}
+                elif (getattr(options, "env", None) or {}).get("ARCREEL_AGENT_BACKEND") == "codex":
+                    raise RuntimeError(_("codex_history_unavailable", locale=locale))
             except Exception as exc:
                 sdk_stderr = startup_stderr.render()
                 startup_stderr.stop()
@@ -936,10 +989,10 @@ class SessionManager:
                     session_id=session_id,
                     sdk_stderr=sdk_stderr,
                 ) from exc
-            assistant_model = resolve_configured_assistant_model(getattr(options, "env", None))
+            assistant_provider, assistant_model = self.configured_agent_identity(options)
 
             actor = SessionActor(
-                client_factory=lambda: ClaudeSDKClient(options=options),
+                client_factory=lambda: self.build_agent_client(options, meta.project_name),
                 on_message=self._make_actor_message_callback(managed_ref),
             )
 
@@ -952,6 +1005,7 @@ class SessionManager:
                 status=resumed_status,
                 project_name=meta.project_name,
                 assistant_model=assistant_model,
+                assistant_provider=assistant_provider,
                 resolved_sdk_id=meta.id,  # 标记为已注册，防止重复创建 DB 记录
             )
             managed.sdk_id_event.set()  # 已有会话不需要等待 sdk_id
@@ -1227,17 +1281,30 @@ class SessionManager:
         final_status: SessionStatus,
     ) -> None:
         input_tokens, output_tokens, usage_tokens = extract_text_token_usage(result_msg)
-        total_cost_usd = extract_assistant_cost(result_msg)
+        provider = result_msg.get("provider") or managed.assistant_provider
+        total_cost_usd = 0.0 if provider == PROVIDER_CODEX else extract_assistant_cost(result_msg)
         if input_tokens is None and output_tokens is None and total_cost_usd is None:
             return
+        model_message = result_msg
+        if provider == PROVIDER_CODEX:
+            model_usage = result_msg.get("model_usage") or result_msg.get("modelUsage")
+            if (
+                not result_msg.get("model")
+                and not result_msg.get("model_name")
+                and isinstance(model_usage, dict)
+                and len(model_usage) == 1
+            ):
+                model_message = {**result_msg, "model": next(iter(model_usage))}
+            if not model_message.get("model") and not model_message.get("model_name") and not managed.assistant_model:
+                return
 
         # 事后补录：一次调用写入终态行（省掉调用方管理的 pending 中间态）。
         await self.ledger.backfill(
             project_name=managed.project_name,
             call_type="text",
-            model=resolve_assistant_model(result_msg, managed.assistant_model),
+            model=resolve_assistant_model(model_message, managed.assistant_model),
             prompt=managed.last_user_prompt[:500] if managed.last_user_prompt else None,
-            provider=PROVIDER_ANTHROPIC,
+            provider=provider,
             user_id=getattr(self, "_user_id", DEFAULT_USER_ID),
             status="success" if final_status == "completed" else "failed",
             input_tokens=input_tokens,

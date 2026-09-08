@@ -23,8 +23,11 @@ from lib.draft_quarantine import (
     quarantine_path,
     write_quarantine,
 )
+from lib.project_manager import ProjectManager
 from server.agent_runtime.sdk_tools.text_generation import (
+    confirm_script_review_tool,
     discard_draft_tool,
+    generate_episode_script_tool,
     open_draft_tool,
     patch_draft_tool,
     promote_draft_tool,
@@ -67,6 +70,186 @@ from tests.integration.server.agent_runtime.sdk_tools.sdk_tools_support import (
 
 def _draft_result(out: dict) -> dict:
     return json.loads(out["content"][0]["text"])["draft"]
+
+
+@pytest.fixture
+def formal_revision_ctx(idle_fake_ctx: ToolContext) -> ToolContext:
+    """Use the real project and draft persistence with injected model capabilities."""
+    ctx = idle_fake_ctx
+    project = copy.deepcopy(ctx.pm.project_payload)
+    project["characters"] = {"阿离": {"description": "主角"}}
+    (ctx.project_path / "project.json").write_text(json.dumps(project, ensure_ascii=False), encoding="utf-8")
+    ctx.pm = ProjectManager(str(ctx.projects_root))
+    source = ctx.project_path / "source"
+    source.mkdir(exist_ok=True)
+    (source / "episode_1.txt").write_text("三年后，阿离回到山门。", encoding="utf-8")
+    write_drama_script_plan(ctx, [drama_scene()])
+    return ctx
+
+
+@pytest.mark.parametrize("prefix", ["", "sha256-v1:"])
+async def test_formal_revision_round_trips_through_real_patch_and_promotion(
+    formal_revision_ctx: ToolContext, prefix: str
+):
+    ctx = formal_revision_ctx
+    locator = {"episode": 1, "doc_type": "drama_script_plan"}
+    opened = _draft_result(await call(open_draft_tool(ctx), {**locator, "source": "source/episode_1.txt"}))
+    content = copy.deepcopy(opened["content"])
+    content["scenes"][0]["scene_description"] = "阿离在山门前停步。"
+    patched = await call(
+        patch_draft_tool(ctx),
+        {
+            **locator,
+            "content": content,
+            "base_revision": opened["revision"],
+            "accept_formal_revision": prefix + opened["formal_revision"],
+        },
+    )
+    assert patched.get("is_error") is not True, patched
+    draft = _draft_result(patched)
+    assert draft["revision"] != opened["revision"]
+    assert read_drama_quarantine(ctx)["meta"]["base_fingerprint"] == opened["formal_revision"]
+    promoted = await call(promote_draft_tool(ctx), {**locator, "base_revision": draft["revision"]})
+    assert promoted.get("is_error") is not True, promoted
+    formal = json.loads(drama_script_plan_path(ctx).read_text(encoding="utf-8"))
+    assert formal["scenes"][0]["scene_description"] == content["scenes"][0]["scene_description"]
+    assert not drama_quarantine_path(ctx).exists()
+
+
+@pytest.mark.parametrize("revision_kind", ["unknown_prefix", "different_hash", "stale_hash", "null"])
+async def test_formal_revision_conflict_does_not_write_either_document(
+    formal_revision_ctx: ToolContext, revision_kind: str
+):
+    ctx = formal_revision_ctx
+    locator = {"episode": 1, "doc_type": "drama_script_plan"}
+    opened = _draft_result(await call(open_draft_tool(ctx), {**locator, "source": "source/episode_1.txt"}))
+    accepted = {
+        "unknown_prefix": "sha256-v2:" + opened["formal_revision"],
+        "different_hash": "sha256-v1:" + "0" * 64,
+        "stale_hash": "sha256-v1:" + opened["formal_revision"],
+        "null": None,
+    }[revision_kind]
+    if revision_kind == "stale_hash":
+        write_drama_script_plan(ctx, [drama_scene(scene_description="另一位编辑者保存的场景。")])
+    draft_before = drama_quarantine_path(ctx).read_bytes()
+    formal_before = drama_script_plan_path(ctx).read_bytes()
+    content = copy.deepcopy(opened["content"])
+    content["scenes"][0]["scene_description"] = "不可覆盖现值的修改。"
+    outcome = await call(
+        patch_draft_tool(ctx),
+        {**locator, "content": content, "base_revision": opened["revision"], "accept_formal_revision": accepted},
+    )
+    assert outcome["is_error"] is True
+    problem = json.loads(outcome["content"][0]["text"])["problem"]
+    assert problem["code"] == "formal_revision_conflict"
+    assert problem["params"] == {
+        "revision_field": "formal_revision",
+        "expected_revision": accepted,
+        "actual_revision": script_review.content_fingerprint(drama_script_plan_path(ctx)),
+    }
+    assert drama_quarantine_path(ctx).read_bytes() == draft_before
+    assert drama_script_plan_path(ctx).read_bytes() == formal_before
+
+
+async def test_null_formal_revision_explicitly_accepts_absence_before_promotion(formal_revision_ctx: ToolContext):
+    ctx = formal_revision_ctx
+    locator = {"episode": 1, "doc_type": "drama_script_plan"}
+    opened = _draft_result(await call(open_draft_tool(ctx), {**locator, "source": "source/episode_1.txt"}))
+    drama_script_plan_path(ctx).unlink()
+    refreshed = _draft_result(await call(open_draft_tool(ctx), locator))
+    assert refreshed["formal_revision"] is None
+    patch = {**locator, "content": opened["content"], "base_revision": opened["revision"]}
+    without_acceptance = _draft_result(await call(patch_draft_tool(ctx), patch))
+    assert read_drama_quarantine(ctx)["meta"]["base_fingerprint"] == opened["formal_revision"]
+    rejected = await call(promote_draft_tool(ctx), {**locator, "base_revision": without_acceptance["revision"]})
+    assert rejected["is_error"] is True
+    assert "formal_revision_conflict" in rejected["content"][0]["text"]
+    assert not drama_script_plan_path(ctx).exists()
+    accepted = _draft_result(
+        await call(
+            patch_draft_tool(ctx),
+            {**patch, "base_revision": without_acceptance["revision"], "accept_formal_revision": None},
+        )
+    )
+    assert read_drama_quarantine(ctx)["meta"]["base_fingerprint"] is None
+    promoted = await call(promote_draft_tool(ctx), {**locator, "base_revision": accepted["revision"]})
+    assert promoted.get("is_error") is not True, promoted
+    assert json.loads(drama_script_plan_path(ctx).read_text(encoding="utf-8"))["scenes"][0]["scene_id"] == "E1S01"
+
+
+async def test_formal_change_after_prefixed_acceptance_still_blocks_promotion(formal_revision_ctx: ToolContext):
+    ctx = formal_revision_ctx
+    locator = {"episode": 1, "doc_type": "drama_script_plan"}
+    opened = _draft_result(await call(open_draft_tool(ctx), {**locator, "source": "source/episode_1.txt"}))
+    patched = _draft_result(
+        await call(
+            patch_draft_tool(ctx),
+            {
+                **locator,
+                "content": opened["content"],
+                "base_revision": opened["revision"],
+                "accept_formal_revision": "sha256-v1:" + opened["formal_revision"],
+            },
+        )
+    )
+    write_drama_script_plan(ctx, [drama_scene(scene_description="正式文件在接受基线后再次变化。")])
+    formal_before = drama_script_plan_path(ctx).read_bytes()
+    draft_before = drama_quarantine_path(ctx).read_bytes()
+    result = await call(promote_draft_tool(ctx), {**locator, "base_revision": patched["revision"]})
+    assert result["is_error"] is True
+    assert "formal_revision_conflict" in result["content"][0]["text"]
+    assert drama_script_plan_path(ctx).read_bytes() == formal_before
+    assert drama_quarantine_path(ctx).read_bytes() == draft_before
+
+
+async def test_new_drama_workflow_reports_all_blockers_then_repairs_and_confirms(formal_revision_ctx: ToolContext):
+    ctx = formal_revision_ctx
+    spoken = [
+        {"kind": "voiceover", "speaker": None, "text": "三年后，阿离回到山门。"},
+        {"kind": "dialogue", "speaker": "阿离", "text": "我回来了。"},
+    ]
+    originals = [drama_scene(scene_id=key, utterances=copy.deepcopy(spoken)) for key in ("E1S01", "E1S02")]
+    originals[0]["needs_replan"] = True
+    unchanged = drama_scene(scene_id="E1S03")
+    write_drama_script_plan(ctx, [*originals, unchanged])
+    refused = await call(confirm_script_review_tool(ctx), {"episode": 1})
+    problem = json.loads(refused["content"][0]["text"])["problem"]
+    assert problem["code"] == "speech_admission_refused"
+    assert {item["unit_id"] for item in problem["params"]["speech_admissions"]} == {"E1S01", "E1S02"}
+    assert all("mixed_speech" in json.dumps(item) for item in problem["params"]["speech_admissions"])
+    assert script_review.gate_blocks_prompt_authoring(ctx.project_path, ctx.pm.load_project("demo"), 1)
+
+    locator = {"episode": 1, "doc_type": "drama_script_plan"}
+    opened = _draft_result(await call(open_draft_tool(ctx), locator))
+    repaired = []
+    for scene in originals:
+        for index, utterance in enumerate(scene["utterances"]):
+            repaired.append({**scene, "scene_id": f"{scene['scene_id']}{index}", "utterances": [utterance]})
+    content = {**opened["content"], "scenes": [*repaired, unchanged]}
+    patched = _draft_result(
+        await call(
+            patch_draft_tool(ctx),
+            {
+                **locator,
+                "content": content,
+                "base_revision": opened["revision"],
+                "accept_formal_revision": "sha256-v1:" + opened["formal_revision"],
+            },
+        )
+    )
+    promoted = await call(promote_draft_tool(ctx), {**locator, "base_revision": patched["revision"]})
+    assert promoted.get("is_error") is not True, promoted
+    assert not drama_quarantine_path(ctx).exists()
+    saved = json.loads(drama_script_plan_path(ctx).read_text(encoding="utf-8"))
+    assert saved["scenes"][-1] == unchanged
+    assert all(scene.get("needs_replan") is not True for scene in saved["scenes"])
+    assert [u for s in saved["scenes"][:-1] for u in s["utterances"]] == spoken + spoken
+    confirmed = await call(confirm_script_review_tool(ctx), {"episode": 1})
+    assert confirmed.get("is_error") is not True, confirmed
+    assert not script_review.gate_blocks_prompt_authoring(ctx.project_path, ctx.pm.load_project("demo"), 1)
+    preview = await call(generate_episode_script_tool(ctx), {"episode": 1, "dry_run": True})
+    assert preview.get("is_error") is not True, preview
+    assert all(scene["scene_id"] in preview["content"][0]["text"] for scene in saved["scenes"])
 
 
 @pytest.mark.parametrize("factory", [open_draft_tool, patch_draft_tool, promote_draft_tool, discard_draft_tool])

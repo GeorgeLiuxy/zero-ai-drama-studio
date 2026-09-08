@@ -32,6 +32,7 @@ describe("ProviderIcon", () => {
     "dashscope",
     "minimax",
     "openai",
+    "codex",
     "vidu",
     "kling",
   ];

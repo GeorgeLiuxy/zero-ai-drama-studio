@@ -27,6 +27,8 @@ import type {
   ProjectEventSnapshotPayload,
   ProjectDeletedPayload,
   GetSystemConfigResponse,
+  AgentRuntimeConfig,
+  AgentRuntimePatch,
   GetSystemVersionResponse,
   ModelCandidatesResponse,
   OnboardingStatus,
@@ -36,6 +38,7 @@ import type {
   ProviderInfo,
   ProviderConfigDetail,
   ConnectivityCheckResult,
+  CodexConnectionStatus,
   ProviderCredential,
   UsageStatsResponse,
   CustomProviderInfo,
@@ -2822,6 +2825,17 @@ class API {
     return this.request(`/providers/${encodeURIComponent(id)}/config`, { signal: options.signal });
   }
 
+  static async getCodexConnection(options: { signal?: AbortSignal } = {}): Promise<CodexConnectionStatus> {
+    return this.request("/providers/codex/connection", { signal: options.signal });
+  }
+
+  static async setCodexConnection(enabled: boolean): Promise<CodexConnectionStatus> {
+    return this.request("/providers/codex/connection", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    });
+  }
+
   /** 更新指定 provider 的配置字段。 */
   static async patchProviderConfig(
     id: string,
@@ -2895,6 +2909,14 @@ class API {
   }
 
   // ==================== Agent 配置 / 凭证 API ====================
+
+  static async getAgentRuntime(options: { signal?: AbortSignal } = {}): Promise<AgentRuntimeConfig> {
+    return this.request("/agent/runtime", { signal: options.signal });
+  }
+
+  static async updateAgentRuntime(patch: AgentRuntimePatch): Promise<AgentRuntimeConfig> {
+    return this.request("/agent/runtime", { method: "PATCH", body: JSON.stringify(patch) });
+  }
 
   static async listAgentPresetProviders(): Promise<PresetProvidersResponse> {
     return this.request("/agent/preset-providers");

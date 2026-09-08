@@ -1,0 +1,13 @@
+envs/
+models/
+cache/
+repos/
+runtime/
+outputs/
+logs/
+*.key
+backups/
+*.zip
+logs-*.txt
+__pycache__/
+.pytest_cache/

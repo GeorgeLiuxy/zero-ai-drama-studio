@@ -73,6 +73,7 @@ def _make_mock_svc(
 
     svc.get_setting = AsyncMock(side_effect=_get_setting)
     svc.get_all_settings = AsyncMock(side_effect=_get_all_settings)
+    svc.get_agent_runtime = AsyncMock(return_value={"ready": False})
     svc.set_setting = AsyncMock(side_effect=_set_setting)
 
     async def _set_video_poll_timeout_seconds(value: int) -> None:
@@ -135,6 +136,7 @@ class TestGetSystemConfig:
             res = client.get("/api/v1/system/config")
         settings = res.json()["settings"]
         expected_keys = {
+            "agent_ready",
             "default_video_backend",
             "default_video_backend_i2v",
             "default_video_backend_r2v",
@@ -160,6 +162,7 @@ class TestGetSystemConfig:
             "narration_speed",
         }
         assert set(settings.keys()) == expected_keys
+        assert settings["agent_ready"] is False
 
     def test_options_contain_backend_lists(self):
         mock_svc = _make_mock_svc(ready_providers=["gemini-aistudio"])

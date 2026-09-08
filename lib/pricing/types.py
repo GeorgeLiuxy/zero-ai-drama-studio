@@ -167,6 +167,14 @@ class ViduDelegate:
     kind: Literal["vidu_delegate"] = "vidu_delegate"
 
 
+@dataclass(frozen=True)
+class Subscription:
+    """Subscription usage carries no separate per-call API charge or inferred quota."""
+
+    currency: str = "USD"
+    kind: Literal["subscription"] = "subscription"
+
+
 Pricing = (
     PerToken
     | PerImageFlat
@@ -178,4 +186,5 @@ Pricing = (
     | PerTokenVideo
     | PerCharacter
     | ViduDelegate
+    | Subscription
 )

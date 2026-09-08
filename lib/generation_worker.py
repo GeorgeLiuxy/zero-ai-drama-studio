@@ -107,6 +107,10 @@ def _encode_task_failure_message(exc: Exception) -> str:
     落库只存机器码，本地化文案由读侧按 ``Accept-Language`` 渲染——worker 后台无 request
     上下文，在这里渲染会把任务的失败原因锁死成单一语言。
     """
+    from lib.codex_runtime import CodexError
+
+    if isinstance(exc, CodexError):
+        return encode_failure(exc.code)
     if isinstance(exc, ScriptEditError):
         # 编不出来时退到通用 script_edit_error，保住"是剧本编辑失败"这一层信息。
         return _try_encode_failure(exc.key, exc.params) or encode_failure("script_edit_error")

@@ -68,6 +68,19 @@ class TestRegistryHit:
         assert currency == "USD"
 
 
+@pytest.mark.parametrize(("model", "media_type"), [(None, "text"), ("removed-model", "text"), ("gpt-image-2", "image")])
+def test_codex_subscription_usage_never_falls_back_to_api_rates(model: str | None, media_type: str):
+    from lib.pricing.strategies import PricingParams, calculate_pricing
+    from lib.pricing.types import Subscription
+
+    pricing = lookup_pricing("codex", model, media_type)
+    assert isinstance(pricing, Subscription)
+    assert calculate_pricing(
+        pricing,
+        PricingParams(call_type=media_type, model=model, input_tokens=1_000_000, output_tokens=1_000_000, n=8),
+    ) == (0.0, "USD")
+
+
 class TestUnknownProviderFallsBackToGemini:
     @pytest.mark.parametrize("provider", ["gemini", "unknown", "seedance"])
     def test_text(self, provider: str):

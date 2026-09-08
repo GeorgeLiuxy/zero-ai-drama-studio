@@ -9,7 +9,7 @@ import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from lib.agent_provider_catalog import CUSTOM_SENTINEL_ID, get_preset, list_presets
@@ -18,14 +18,55 @@ from lib.config.anthropic_probe import DiagnosisCode, run_test
 from lib.config.anthropic_probe import ProbeResult as ProbeResultDC
 from lib.config.anthropic_probe import TestConnectionResponse as TestConnectionResponseDC
 from lib.config.repository import mask_secret
+from lib.config.service import ConfigService
 from lib.db import get_async_session
 from lib.db.base import dt_to_iso
 from lib.db.repositories.agent_credential_repo import AgentCredentialRepository
 from lib.i18n import Translator
+from server.dependencies import get_config_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["Agent 配置"])
+
+
+class AgentRuntimeModel(BaseModel):
+    id: str
+    display_name: str
+    supported_reasoning_efforts: list[str]
+
+
+class AgentRuntimeResponse(BaseModel):
+    runtime: Literal["codex", "claude"]
+    enabled: bool
+    ready: bool
+    model: str | None
+    reasoning_effort: str
+    models: list[AgentRuntimeModel]
+    error_code: str | None
+
+
+class AgentRuntimePatch(BaseModel):
+    enabled: bool = False
+    model: str | None = None
+    reasoning_effort: str = Field(default="low", min_length=1)
+
+
+@router.get("/runtime", response_model=AgentRuntimeResponse)
+async def get_agent_runtime(svc: ConfigService = Depends(get_config_service)) -> dict:
+    return await svc.get_agent_runtime()
+
+
+@router.patch("/runtime", response_model=AgentRuntimeResponse)
+async def patch_agent_runtime(
+    body: AgentRuntimePatch,
+    svc: ConfigService = Depends(get_config_service),
+    session: AsyncSession = Depends(get_async_session),
+) -> dict:
+    changes = body.model_dump(exclude_unset=True)
+    result = await svc.update_agent_runtime(changes)
+    await session.commit()
+    return result
 
 
 # ── Response models ─────────────────────────────────────────────────

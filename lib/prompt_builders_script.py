@@ -219,6 +219,15 @@ _NORMALIZE_UTTERANCES_SCREENPLAY = (
 # script_plan source_text（逐字原文锚）填写规则——两源共用
 _NORMALIZE_SOURCE_TEXT_GUIDE = "逐字摘录本分镜对应的原文片段，尽量与原文一致、宁缺毋造（无把握可留空）。"
 
+_NORMALIZE_SPEECH_OWNERSHIP = (
+    "每个分镜只能包含角色台词（dialogue）、旁白（voiceover）或无发声三种情况之一，"
+    "不得在同一分镜混合 dialogue 与 voiceover；多名角色之间的对白可以同镜。"
+    "若原文先后出现真实旁白与角色台词，必须按原顺序拆成独立分镜，保留全部发声内容与叙事含义，"
+    "不可删词、改换说话人或把真实发声藏入画面描述来规避限制。"
+    "舞台动作、场景说明、屏幕字、字幕、时间地点卡本身不是发声，写入 scene_description，"
+    "仅当原文明示被朗读或实际说出时才进入 utterances；不要把动作叙述自动改成旁白。"
+)
+
 # script_plan segment_break 规则。novel 分支无增量判断标准（「是否为场景切换点」由 schema
 # description 表达），不再单列；screenplay 分支保留「沿用作者场次、不重新切碎」的实质指导。
 # 变体自带前导换行，空值时模板中不留空行。
@@ -695,6 +704,8 @@ def build_normalize_prompt(
 
 - **source_text**：{_NORMALIZE_SOURCE_TEXT_GUIDE}
 - **utterances**：{utterances_rule}
+
+{_NORMALIZE_SPEECH_OWNERSHIP}
 
 每个分镜应为一个独立的视觉画面、可在指定时长内完成；避免在一个分镜内安排多个动作或画面切换。
 """

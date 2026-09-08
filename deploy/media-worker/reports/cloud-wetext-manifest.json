@@ -1,0 +1,72 @@
+[
+  {
+    "CommitMessage": "Update FSTs for 0.1.5 (batch 1/1)",
+    "CommittedDate": 1785310864,
+    "CommitterName": "pengzhendong",
+    "InCheck": false,
+    "IsLFS": false,
+    "Mode": "33188",
+    "Name": "tagger.fst",
+    "Path": "zh/tn/tagger.fst",
+    "Revision": "b04bc07588601f7619b20efbb01cd1fa7278ccbc",
+    "Sha256": "cf341314c51f7ce59049f3b2c42f0ce8fd71e6d08d4d6969613aad384a5e2ae8",
+    "Size": 527178,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Update FSTs for 0.1.5 (batch 1/1)",
+    "CommittedDate": 1785310864,
+    "CommitterName": "pengzhendong",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "tagger.fst",
+    "Path": "en/tn/tagger.fst",
+    "Revision": "b04bc07588601f7619b20efbb01cd1fa7278ccbc",
+    "Sha256": "245e2dc9174cdd007a8e9e50f3339773d1adbbc7535b71cf67478dc1683cc3ec",
+    "Size": 5645674,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Update FSTs for 0.1.5 (batch 1/1)",
+    "CommittedDate": 1785310864,
+    "CommitterName": "pengzhendong",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "verbalizer.fst",
+    "Path": "en/tn/verbalizer.fst",
+    "Revision": "b04bc07588601f7619b20efbb01cd1fa7278ccbc",
+    "Sha256": "03155c88f317b2795969e264c19f87faf98b9853d5ac631e419bacdc3b3ee15a",
+    "Size": 6398822,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Update FSTs for 0.1.5 (batch 1/1)",
+    "CommittedDate": 1785310864,
+    "CommitterName": "pengzhendong",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "verbalizer.fst",
+    "Path": "zh/tn/verbalizer.fst",
+    "Revision": "b04bc07588601f7619b20efbb01cd1fa7278ccbc",
+    "Sha256": "5a13cd679dd54637d12d2bd1bd33ee2165d91c867e14468c93195af02256e5da",
+    "Size": 1069758,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Update FSTs for 0.1.5 (batch 1/1)",
+    "CommittedDate": 1785310864,
+    "CommitterName": "pengzhendong",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "verbalizer_remove_erhua.fst",
+    "Path": "zh/tn/verbalizer_remove_erhua.fst",
+    "Revision": "b04bc07588601f7619b20efbb01cd1fa7278ccbc",
+    "Sha256": "4ecdea636b97cb7dff2637499713815836ec703d29cf044f17106d428f258ee5",
+    "Size": 1069842,
+    "Type": "blob"
+  }
+]

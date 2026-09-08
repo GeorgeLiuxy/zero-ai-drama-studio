@@ -1,0 +1,17 @@
+{
+  "name": "Matcha-TTS",
+  "path": "third_party/Matcha-TTS",
+  "sha": "dd9105b34bf2be2230f4aa1e4769fb586a3c824e",
+  "size": 0,
+  "url": "https://api.github.com/repos/QwenAudio/CosyVoice/contents/third_party/Matcha-TTS?ref=074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+  "html_url": "https://github.com/shivammehta25/Matcha-TTS/tree/dd9105b34bf2be2230f4aa1e4769fb586a3c824e",
+  "git_url": "https://api.github.com/repos/shivammehta25/Matcha-TTS/git/trees/dd9105b34bf2be2230f4aa1e4769fb586a3c824e",
+  "download_url": null,
+  "type": "submodule",
+  "submodule_git_url": "https://github.com/shivammehta25/Matcha-TTS.git",
+  "_links": {
+    "self": "https://api.github.com/repos/QwenAudio/CosyVoice/contents/third_party/Matcha-TTS?ref=074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc",
+    "git": "https://api.github.com/repos/shivammehta25/Matcha-TTS/git/trees/dd9105b34bf2be2230f4aa1e4769fb586a3c824e",
+    "html": "https://github.com/shivammehta25/Matcha-TTS/tree/dd9105b34bf2be2230f4aa1e4769fb586a3c824e"
+  }
+}

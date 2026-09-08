@@ -1,0 +1,58 @@
+[
+  {
+    "CommitMessage": "Upload folder using ModelScope SDK",
+    "CommittedDate": 1753711593,
+    "CommitterName": "Cherrytest",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "Path": "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "Revision": "594fe158780d7aa76539080fa06dce5e955fea53",
+    "Sha256": "c3355d30191f1f066b26d93fba017ae9809dce6c627dda5f6a66eaa651204f68",
+    "Size": 6735906897,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Upload folder using ModelScope SDK",
+    "CommittedDate": 1753711593,
+    "CommitterName": "Cherrytest",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+    "Path": "split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+    "Revision": "594fe158780d7aa76539080fa06dce5e955fea53",
+    "Sha256": "6122e79d55e0f235698d11d657f3b196c5273c830da00b2b013c5a048d5e6a42",
+    "Size": 14294742832,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Upload folder using ModelScope SDK",
+    "CommittedDate": 1753711593,
+    "CommitterName": "Cherrytest",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+    "Path": "split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+    "Revision": "594fe158780d7aa76539080fa06dce5e955fea53",
+    "Sha256": "5471a457b6ac404202a5fbe6c11595a3d5641fc766b00f38763f72303fffc21e",
+    "Size": 14294742832,
+    "Type": "blob"
+  },
+  {
+    "CommitMessage": "Upload folder using ModelScope SDK",
+    "CommittedDate": 1753711593,
+    "CommitterName": "Cherrytest",
+    "InCheck": false,
+    "IsLFS": true,
+    "Mode": "33188",
+    "Name": "wan_2.1_vae.safetensors",
+    "Path": "split_files/vae/wan_2.1_vae.safetensors",
+    "Revision": "594fe158780d7aa76539080fa06dce5e955fea53",
+    "Sha256": "2fc39d31359a4b0a64f55876d8ff7fa8d780956ae2cb13463b0223e15148976b",
+    "Size": 253815318,
+    "Type": "blob"
+  }
+]

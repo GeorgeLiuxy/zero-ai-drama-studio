@@ -20,6 +20,7 @@ from lib.pricing.types import (
     PerTokenVideo,
     PerVideoBucket,
     Pricing,
+    Subscription,
     ViduDelegate,
 )
 from lib.vidu_shared import calculate_vidu_cost
@@ -225,6 +226,8 @@ def _vidu(pricing: ViduDelegate, params: PricingParams) -> tuple[float, str]:
 
 def calculate_pricing(pricing: Pricing, params: PricingParams) -> tuple[float, str]:
     """按 ``pricing`` 的运行时类型派发到对应策略，返回 ``(金额, 币种)``。"""
+    if isinstance(pricing, Subscription):
+        return 0.0, pricing.currency
     if isinstance(pricing, PerToken):
         return _per_token(pricing, params)
     if isinstance(pricing, PerImageFlat):

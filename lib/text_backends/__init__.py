@@ -54,3 +54,8 @@ from lib.providers import PROVIDER_AGNES
 from lib.text_backends.agnes import AgnesTextBackend
 
 register_backend(PROVIDER_AGNES, AgnesTextBackend)
+
+from lib.providers import PROVIDER_CODEX
+from lib.text_backends.codex import CodexTextBackend
+
+register_backend(PROVIDER_CODEX, CodexTextBackend)

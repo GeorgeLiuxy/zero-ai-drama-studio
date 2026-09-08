@@ -51,6 +51,30 @@ MAX_VERTEX_CREDENTIALS_BYTES = 1024 * 1024  # 1 MiB
 
 router = APIRouter(prefix="/providers", tags=["Providers"])
 
+_codex_connection_lock = asyncio.Lock()
+
+
+class CodexConnectionRequest(BaseModel):
+    enabled: bool
+
+
+@router.get("/codex/connection")
+async def get_codex_connection() -> dict[str, Any]:
+    from lib.codex_runtime import connection_summary
+
+    return await asyncio.to_thread(connection_summary)
+
+
+@router.post("/codex/connection")
+async def set_codex_connection(body: CodexConnectionRequest, request: Request) -> dict[str, Any]:
+    from lib.codex_runtime import refresh_connection
+
+    async with _codex_connection_lock:
+        result = await asyncio.to_thread(refresh_connection, body.enabled)
+    await _invalidate_caches(request)
+    return result
+
+
 _CREDENTIAL_KEYS = frozenset({"api_key", "credentials_path", "base_url", "access_key", "secret_key"})
 
 # ---------------------------------------------------------------------------
@@ -478,6 +502,8 @@ async def get_provider_config(
     cred_repo = CredentialRepository(session)
     has_active = await cred_repo.has_active_credential(provider_id)
     status = "ready" if has_active else "unconfigured"
+    if provider_id == "codex":
+        status = next(item.status for item in await svc.get_all_providers_status() if item.name == provider_id)
 
     # 构建字段列表：先必填，再可选，跳过凭证字段
     fields: list[FieldInfo] = []

@@ -803,6 +803,12 @@ async def test_normalize_drama_script_marks_mixed_machine_candidate_before_revie
     )
     assert saved["scenes"][0]["needs_replan"] is True
     assert [utterance["text"] for utterance in saved["scenes"][0]["utterances"]] == ["我回来了。", "三年后。"]
+    receipt = result["content"][0]["text"]
+    assert "E1S01" in receipt
+    assert "mixed_speech" in receipt
+    assert "utterances.0.text" in receipt
+    assert "next_action=replan_unit" in receipt
+    assert "已保存不代表可确认" in receipt
 
 
 async def test_normalize_drama_script_defaults_to_the_episode_derived_source(fake_ctx: ToolContext) -> None:
@@ -842,14 +848,19 @@ async def test_normalize_drama_script_rejects_a_default_source_symlink_escape(fa
     source_dir.mkdir(parents=True)
     outside = fake_ctx.projects_root / "outside.txt"
     outside.write_text("项目外内容", encoding="utf-8")
-    (source_dir / "episode_1.txt").symlink_to(outside)
+    try:
+        (source_dir / "episode_1.txt").symlink_to(outside)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            pytest.skip("Windows account cannot create symbolic links")
+        raise
 
     out = await call(generate_script_plan_tool(fake_ctx), {"episode": 1, "dry_run": True})
 
     assert out.get("is_error") is True
     detail = json.loads(out["content"][0]["text"])["problem"]["detail"]
     assert "路径超出项目目录" in detail
-    assert "source/episode_1.txt" in detail
+    assert "source/episode_1.txt" in detail.replace("\\", "/")
 
 
 async def test_normalize_drama_script_refuses_when_the_episode_derived_source_is_missing(
@@ -865,7 +876,7 @@ async def test_normalize_drama_script_refuses_when_the_episode_derived_source_is
 
     assert out.get("is_error") is True
     detail = json.loads(out["content"][0]["text"])["problem"]["detail"]
-    assert "source/episode_1.txt" in detail
+    assert "source/episode_1.txt" in detail.replace("\\", "/")
     assert "plan_episodes" in detail
 
 

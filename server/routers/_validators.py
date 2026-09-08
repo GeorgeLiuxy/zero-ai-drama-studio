@@ -108,14 +108,15 @@ def validate_backend_value(value: str, field_name: str) -> None:
     provider_meta = PROVIDER_REGISTRY.get(provider_id)
     if provider_meta is None and not provider_id.startswith("custom-"):
         raise BadRequestError("unknown_provider", provider_id=provider_id).with_diagnostic(f"field: {field_name}")
+    model_info = provider_meta.effective_models.get(model_id) if provider_meta is not None else None
+    if provider_id == "codex" and model_info is None:
+        raise BadRequestError("model_not_found").with_diagnostic(f"field: {field_name}; model: {value}")
     expected_media_type = _FIELD_MEDIA_TYPES.get(field_name)
-    if expected_media_type is not None and provider_meta is not None:
-        model_info = provider_meta.models.get(model_id)
-        if model_info is not None and model_info.media_type != expected_media_type:
-            raise BadRequestError(
-                "backend_media_type_mismatch",
-                provider=provider_id,
-                model=model_id,
-                expected=expected_media_type,
-                actual=model_info.media_type,
-            ).with_diagnostic(f"field: {field_name}")
+    if expected_media_type is not None and model_info is not None and model_info.media_type != expected_media_type:
+        raise BadRequestError(
+            "backend_media_type_mismatch",
+            provider=provider_id,
+            model=model_id,
+            expected=expected_media_type,
+            actual=model_info.media_type,
+        ).with_diagnostic(f"field: {field_name}")

@@ -1277,7 +1277,7 @@ class ScriptGenerator:
         if ids is not None:
             provider_id, model_id = ids
             provider_meta = PROVIDER_REGISTRY.get(provider_id)
-            model_info = provider_meta.models.get(model_id) if provider_meta else None
+            model_info = provider_meta.effective_models.get(model_id) if provider_meta else None
             if model_info is not None and model_info.media_type == "video":
                 try:
                     backend_caps = builtin_video_capabilities_for_model(provider_id, model_id)

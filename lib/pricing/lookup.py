@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import logging
 
-from lib.pricing.types import PerToken, Pricing, ViduDelegate
+from lib.pricing.types import PerToken, Pricing, Subscription, ViduDelegate
 from lib.providers import (
     PROVIDER_AGNES,
     PROVIDER_ANTHROPIC,
     PROVIDER_ARK,
+    PROVIDER_CODEX,
     PROVIDER_DASHSCOPE,
     PROVIDER_GROK,
     PROVIDER_KLING,
@@ -64,7 +65,7 @@ def _gemini_default_pricing_for(media_type: str, model: str | None = None) -> Pr
 
     if model is not None:
         for provider_id in ("gemini-aistudio", "gemini-vertex"):
-            info = PROVIDER_REGISTRY[provider_id].models.get(model)
+            info = PROVIDER_REGISTRY[provider_id].effective_models.get(model)
             if info is not None and info.pricing is not None and info.media_type == media_type:
                 return info.pricing
 
@@ -73,7 +74,7 @@ def _gemini_default_pricing_for(media_type: str, model: str | None = None) -> Pr
     for fallback_media in (media_type, "text"):
         model_id = default_model_for_provider("gemini-aistudio", fallback_media)
         if model_id is not None:
-            info = meta.models.get(model_id)
+            info = meta.effective_models.get(model_id)
             if info is not None and info.pricing is not None:
                 return info.pricing
     raise RuntimeError("gemini-aistudio 缺少可用于兜底的默认模型定价声明")
@@ -81,6 +82,8 @@ def _gemini_default_pricing_for(media_type: str, model: str | None = None) -> Pr
 
 def lookup_pricing(provider: str, model: str | None, media_type: str) -> Pricing:
     """返回该调用的定价声明。``media_type`` 即 call_type（``text`` / ``image`` / ``video`` / ``audio``）。"""
+    if provider == PROVIDER_CODEX:
+        return Subscription()
     if provider == PROVIDER_ANTHROPIC:
         return _ANTHROPIC_PRICING
     if provider == PROVIDER_VIDU:
@@ -93,7 +96,7 @@ def lookup_pricing(provider: str, model: str | None, media_type: str) -> Pricing
     if meta is None:
         return _gemini_default_pricing_for(media_type, model)
 
-    info = meta.models.get(model) if model is not None else None
+    info = meta.effective_models.get(model) if model is not None else None
     # 必须媒体类型匹配才命中：历史按 call_type 分表，模型名只在本模态费率表内查。跨模态的
     # (model, call_type) 组合（如 video 调用带着图像模型名）应回落到当前媒体类型的默认模型，
     # 而非按该模型自身的异模态费率计价。
@@ -120,7 +123,7 @@ def lookup_pricing(provider: str, model: str | None, media_type: str) -> Pricing
     if provider in _OWN_TABLE_PROVIDERS:
         default_model = default_model_for_provider(provider, media_type)
         if default_model is not None:
-            default_info = meta.models.get(default_model)
+            default_info = meta.effective_models.get(default_model)
             if default_info is not None and default_info.pricing is not None:
                 return default_info.pricing
     return _gemini_default_pricing_for(media_type, model)

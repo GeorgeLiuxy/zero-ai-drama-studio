@@ -35,6 +35,7 @@ const ICON_REGISTRY: Record<string, ComponentType<{ className?: string }>> = {
  */
 function resolveIconKey(providerId: string): string {
   const id = providerId.toLowerCase();
+  if (id === "codex") return "openai";
   if (id === "gemini-vertex") return "vertexai";
   if (id.startsWith("gemini")) return "gemini";
   if (id.startsWith("grok")) return "grok";

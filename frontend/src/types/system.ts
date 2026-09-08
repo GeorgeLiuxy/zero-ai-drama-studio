@@ -1,4 +1,5 @@
 export interface SystemConfigSettings {
+  agent_ready?: boolean;
   default_video_backend: string;
   default_video_backend_i2v?: string;
   default_video_backend_r2v?: string;
@@ -22,6 +23,22 @@ export interface SystemConfigSettings {
   claude_code_subagent_model: string;
   agent_session_cleanup_delay_seconds: number;
   agent_max_concurrent_sessions: number;
+}
+
+export interface AgentRuntimeConfig {
+  enabled: boolean;
+  runtime: "codex" | "claude";
+  ready: boolean;
+  model: string | null;
+  reasoning_effort: string;
+  models: Array<{ id: string; display_name: string; supported_reasoning_efforts: string[] }>;
+  error_code: string | null;
+}
+
+export interface AgentRuntimePatch {
+  enabled?: boolean;
+  model?: string;
+  reasoning_effort?: string;
 }
 
 export interface SystemConfigOptions {

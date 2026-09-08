@@ -129,5 +129,24 @@ docs/verification-reports/
 .impeccable/live/*.png
 # impeccable-ignore-end
 
+# Machine-specific migration snapshots and local service output.
+deploy/codex-migration-*.json
+deploy/native-*.log
+deploy/native-*.pid
+
+# Versioned worker source lives here; execution data stays on the host.
+deploy/media-worker/envs/
+deploy/media-worker/models/
+deploy/media-worker/cache/
+deploy/media-worker/repos/
+deploy/media-worker/runtime/
+deploy/media-worker/outputs/
+deploy/media-worker/inputs/
+deploy/media-worker/backups/
+deploy/media-worker/logs/
+deploy/media-worker/*.part
+deploy/media-worker/*.bin
+deploy/media-worker/logs-*.txt
+
 # mutmut 变异测试的工作副本（`mutmut run` 生成的整仓复制品）
 mutants/

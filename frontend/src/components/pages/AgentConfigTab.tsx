@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { API } from "@/api";
 import { AgentMemoryCabinet } from "@/components/agent/AgentMemoryCabinet";
 import { AgentPageIntro } from "@/components/agent/AgentPageIntro";
-import { CredentialsSection } from "@/components/agent/CredentialsSection";
+import { CodexAgentSection } from "@/components/agent/CodexAgentSection";
 import { GHOST_BTN_CLS, INPUT_CLS } from "@/components/ui/darkroom-tokens";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 import { SectionShell } from "@/components/ui/SectionShell";
@@ -168,7 +168,7 @@ export function AgentConfigTab({ visible }: AgentConfigTabProps) {
     <div className={visible ? undefined : "hidden"}>
       <div className="space-y-7 pb-0 pt-1">
         <AgentPageIntro onOpenExternalGuide={() => setShowExternalGuide(true)} />
-        <CredentialsSection />
+        <CodexAgentSection />
         <SectionShell kicker="Runtime Tuning" title={t("advanced_settings")}>
           <div className="space-y-4">
             <div>

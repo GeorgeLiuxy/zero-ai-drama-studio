@@ -77,6 +77,20 @@ describe("config-status-store", () => {
     expect(issues).toHaveLength(3);
   });
 
+  it.each([true, false])("uses authoritative Agent readiness %s independently of Anthropic credentials", async (ready) => {
+    vi.spyOn(API, "getProviders").mockResolvedValue(makeProviders());
+    vi.spyOn(API, "listCustomProviders").mockResolvedValue({ providers: [] });
+    vi.spyOn(API, "getSystemConfig").mockResolvedValue(makeConfigResponse({
+      agent_ready: ready,
+      anthropic_api_key: { is_set: !ready, masked: null },
+    }));
+
+    await useConfigStatusStore.getState().fetch();
+
+    expect(useConfigStatusStore.getState().isEmbeddedAgentConfigured).toBe(ready);
+    expect(useConfigStatusStore.getState().initialized).toBe(true);
+  });
+
   it("reports no issues when all configured", async () => {
     vi.spyOn(API, "getProviders").mockResolvedValue(
       makeProviders([{ id: "gemini", display_name: "Google Gemini", status: "ready", media_types: ["image", "video", "text"], capabilities: [], configured_keys: ["api_key"], missing_keys: [], models: {} }]),
