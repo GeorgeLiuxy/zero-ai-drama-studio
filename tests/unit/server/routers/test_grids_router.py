@@ -561,40 +561,44 @@ def _generate_with_gate(monkeypatch, tmp_path, *, scene_count: int, allow_large_
 
 
 @pytest.mark.parametrize(
-    ("scene_count", "grid_size", "side"),
-    [(10, "grid_16", 4), (16, "grid_16", 4), (17, "grid_25", 5), (25, "grid_25", 5)],
+    ("scene_count", "grid_size", "rows", "cols", "canvas"),
+    [
+        (10, "grid_10", 2, 5, "45:32"),
+        (12, "grid_12", 3, 4, "3:4"),
+        (16, "grid_16", 4, 4, "9:16"),
+        (17, "grid_20", 4, 5, "45:64"),
+        (25, "grid_25", 5, 5, "9:16"),
+    ],
 )
-def test_generate_grid_uses_large_grid_when_4k(monkeypatch, tmp_path, scene_count, grid_size, side):
+def test_generate_grid_uses_large_grid_when_4k(monkeypatch, tmp_path, scene_count, grid_size, rows, cols, canvas):
     payloads = _generate_with_gate(monkeypatch, tmp_path, scene_count=scene_count, allow_large_grid=True)
     assert len(payloads) == 1
     assert payloads[0]["grid_size"] == grid_size
-    assert (payloads[0]["rows"], payloads[0]["cols"]) == (side, side)
-    # 方形档整图比例即项目视频比例
-    assert payloads[0]["grid_aspect_ratio"] == payloads[0]["video_aspect_ratio"] == "9:16"
+    assert (payloads[0]["rows"], payloads[0]["cols"]) == (rows, cols)
+    assert payloads[0]["grid_aspect_ratio"] == canvas
+    assert payloads[0]["video_aspect_ratio"] == "9:16"
 
 
 def test_generate_grid_above_25_chunks_at_25(monkeypatch, tmp_path):
     payloads = _generate_with_gate(monkeypatch, tmp_path, scene_count=30, allow_large_grid=True)
     assert [len(p["scene_ids"]) for p in payloads] == [25, 5]
-    assert [p["grid_size"] for p in payloads] == ["grid_25", "grid_9"]
+    assert [p["grid_size"] for p in payloads] == ["grid_25", "grid_5"]
 
 
 @pytest.mark.parametrize("scene_count", [10, 17, 30])
 def test_generate_grid_caps_at_9_without_4k(monkeypatch, tmp_path, scene_count):
     payloads = _generate_with_gate(monkeypatch, tmp_path, scene_count=scene_count, allow_large_grid=False)
-    # 门控生效时切块封顶 9：不足一整块的余数落回更小的档位，但不会出现 4×4 / 5×5
-    assert all(p["grid_size"] in {"grid_4", "grid_9"} for p in payloads)
+    # 格数门控独立于行列布局，尾批按自己的实际分镜数选择模板。
     assert all(p["rows"] * p["cols"] <= 9 for p in payloads)
     assert sum(len(p["scene_ids"]) for p in payloads) == scene_count
 
 
-@pytest.mark.parametrize("scene_count", [5, 6])
-def test_generate_grid_5_and_6_scenes_use_grid_9(monkeypatch, tmp_path, scene_count):
-    # grid_6 已删除：5~6 场景落 grid_9，不足的格由占位格补齐
+@pytest.mark.parametrize(("scene_count", "rows", "cols"), [(5, 1, 5), (6, 2, 3)])
+def test_generate_grid_small_rectangles_have_no_unneeded_placeholders(monkeypatch, tmp_path, scene_count, rows, cols):
     payloads = _generate_with_gate(monkeypatch, tmp_path, scene_count=scene_count, allow_large_grid=False)
     assert len(payloads) == 1
-    assert payloads[0]["grid_size"] == "grid_9"
-    assert (payloads[0]["rows"], payloads[0]["cols"]) == (3, 3)
+    assert payloads[0]["grid_size"] == f"grid_{scene_count}"
+    assert (payloads[0]["rows"], payloads[0]["cols"]) == (rows, cols)
 
 
 def test_generate_grid_maps_each_grid_to_the_task_it_enqueued(monkeypatch, tmp_path):
@@ -659,7 +663,20 @@ def test_grid_capability_reports_gate(monkeypatch, tmp_path):
     with client:
         resp = client.get("/api/v1/projects/demo/grid-capability")
         assert resp.status_code == 200
-        assert resp.json() == {"large_grid_allowed": True, "max_cell_count": 25}
+        body = resp.json()
+        assert body["large_grid_allowed"] is True
+        assert body["max_cell_count"] == 25
+        assert body["video_aspect_ratio"] == "9:16"
+        assert [layout["scene_count"] for layout in body["layouts"]] == list(range(1, 26))
+        assert body["layouts"][11] == {
+            "scene_count": 12,
+            "grid_size": "grid_12",
+            "rows": 3,
+            "cols": 4,
+            "cell_count": 12,
+            "placeholder_count": 0,
+            "grid_aspect_ratio": "3:4",
+        }
 
 
 def test_grid_capability_gated_max_cell_count(monkeypatch, tmp_path):
@@ -673,7 +690,20 @@ def test_grid_capability_gated_max_cell_count(monkeypatch, tmp_path):
     )
     with client:
         resp = client.get("/api/v1/projects/demo/grid-capability")
-        assert resp.json() == {"large_grid_allowed": False, "max_cell_count": 9}
+        body = resp.json()
+        assert body["large_grid_allowed"] is False
+        assert body["max_cell_count"] == 9
+        assert body["video_aspect_ratio"] == "9:16"
+        assert [layout["scene_count"] for layout in body["layouts"]] == list(range(1, 10))
+        assert body["layouts"][6] == {
+            "scene_count": 7,
+            "grid_size": "grid_8",
+            "rows": 2,
+            "cols": 4,
+            "cell_count": 8,
+            "placeholder_count": 1,
+            "grid_aspect_ratio": "9:8",
+        }
 
 
 class _FakePMPath:
@@ -958,8 +988,8 @@ def test_split_grid_success(monkeypatch, tmp_path):
 
     calls = []
 
-    async def fake_split(project_name, g):
-        calls.append((project_name, g.id))
+    async def fake_split(project_name, g, *, review_token=None):
+        calls.append((project_name, g.id, review_token))
         g.split_at = "2026-01-01T00:00:00+00:00"
         return GridSplitResult(
             updated_scene_ids=["a", "b"],
@@ -973,7 +1003,9 @@ def test_split_grid_success(monkeypatch, tmp_path):
         apply_grid_split=fake_split,
     )
     with client:
-        resp = client.post(f"/api/v1/projects/demo/grids/{grid.id}/split")
+        resp = client.post(
+            f"/api/v1/projects/demo/grids/{grid.id}/split", json={"review_token": "review-current-image"}
+        )
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["success"] is True
@@ -981,7 +1013,51 @@ def test_split_grid_success(monkeypatch, tmp_path):
         assert body["missing_scene_ids"] == ["c"]
         assert body["asset_fingerprints"] == {"storyboards/scene_a.png": 1}
         assert body["split_at"] == "2026-01-01T00:00:00+00:00"
-    assert calls == [("demo", grid.id)]
+    assert calls == [("demo", grid.id, "review-current-image")]
+
+
+def test_split_preview_returns_review_without_assigning_storyboards(monkeypatch, tmp_path):
+    grid = _make_completed_grid(tmp_path)
+    record_path = tmp_path / "grids" / f"{grid.id}.json"
+    before = record_path.read_bytes()
+
+    async def preview(project_name, selected_grid):
+        return {
+            "valid": True,
+            "review_token": "review-current-image",
+            "video_aspect_ratio": selected_grid.video_aspect_ratio,
+            "cells": [{"scene_id": f"{project_name}:{selected_grid.scene_ids[0]}", "placeholder": False}],
+        }
+
+    client = _client(
+        monkeypatch,
+        get_project_manager=lambda: _FakePMRegenerate(tmp_path),
+        preview_grid_split=preview,
+    )
+    with client:
+        response = client.get(f"/api/v1/projects/demo/grids/{grid.id}/split-preview")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "valid": True,
+        "review_token": "review-current-image",
+        "video_aspect_ratio": "9:16",
+        "cells": [{"scene_id": "demo:a", "placeholder": False}],
+    }
+    assert record_path.read_bytes() == before
+    assert not (tmp_path / "storyboards").exists()
+
+
+def test_split_preview_rejects_generating_composite(monkeypatch, tmp_path):
+    grid = _make_completed_grid(tmp_path)
+    grid.status = "generating"
+    GridManager(tmp_path).save(grid)
+    client = _client(monkeypatch, get_project_manager=lambda: _FakePMRegenerate(tmp_path))
+
+    with client:
+        response = client.get(f"/api/v1/projects/demo/grids/{grid.id}/split-preview")
+
+    assert response.status_code == 409
 
 
 def test_split_grid_rejected_when_switch_off(monkeypatch, tmp_path):

@@ -22,7 +22,13 @@ from lib.artifact_activation import (
 from lib.artifact_version_provenance import IMAGE_ARTIFACT_BASIS_FIELD
 from lib.async_thread import run_noninterruptible_sync
 from lib.generation_queue import get_generation_queue
-from lib.grid.layout import grid_aspect_ratio_for, max_cell_count, plan_grid_chunks, video_aspect_ratio_of
+from lib.grid.layout import (
+    calculate_grid_layout,
+    grid_aspect_ratio_for,
+    max_cell_count,
+    plan_grid_chunks,
+    video_aspect_ratio_of,
+)
 from lib.grid.models import GridGeneration, build_grid_task_payload
 from lib.grid.prompt_builder import build_grid_prompt
 from lib.grid_manager import GridManager
@@ -36,7 +42,7 @@ from lib.version_manager import VersionManager
 from server.auth import CurrentUser
 from server.services.grid_access import ensure_grid_writable
 from server.services.grid_resolution import resolve_large_grid_allowed
-from server.services.grid_split import GridImageNotReadyError, apply_grid_split
+from server.services.grid_split import GridImageNotReadyError, apply_grid_split, preview_grid_split
 from server.services.reference_admission import require_admitted_storyboard_references
 from server.services.upload_finalize import (
     UPLOAD_VERSION_SOURCE,
@@ -120,7 +126,7 @@ async def generate_grid(
     raw_style = project.get("style")
     style = raw_style if raw_style is not None else ""
 
-    # 4×4 / 5×5 只在图像分辨率档为 4K 时放行；判定与费用估算、前端预览同源
+    # 超过 9 格的单张布局仅在 4K 档放行；判定与费用估算、前端预览同源。
     allow_large_grid = await resolve_large_grid_allowed(project)
 
     groups = group_scenes_by_segment_break(items, id_field)
@@ -134,6 +140,11 @@ async def generate_grid(
     # 放行部分分组会让同批健康的分组独自计费，用户改完再提交时又要重付一次。
     require_admitted_storyboard_references(project, [item for group in groups for item in group])
 
+    with domain_error_on_value_error(lambda _exc: BadRequestError("grid_layout_unavailable")):
+        planned_groups = [
+            (group, plan_grid_chunks(group, aspect_ratio, allow_large_grid=allow_large_grid)) for group in groups
+        ]
+
     grid_ids: list[str] = []
     task_ids: list[str] = []
     task_ids_by_grid: dict[str, str] = {}
@@ -141,12 +152,11 @@ async def generate_grid(
     queue = get_generation_queue()
     gm = GridManager(project_path)
 
-    for group in groups:
+    for group, plans in planned_groups:
         all_scene_ids = [item[id_field] for item in group]
         # 超上限分组切为多张宫格批次（末批不足一档时落小档 + 占位格），
         # 切块与预览、费用估算、SDK 工具同源（plan_grid_chunks）；
         # 空分组是唯一的空产出，此时连旧记录清理也一并跳过。
-        plans = plan_grid_chunks(group, aspect_ratio, allow_large_grid=allow_large_grid)
         if not plans:
             continue
 
@@ -226,21 +236,44 @@ async def generate_grid(
 class GridCapabilityResponse(BaseModel):
     large_grid_allowed: bool
     max_cell_count: int
+    video_aspect_ratio: str
+    layouts: list[dict]
 
 
 @router.get("/grid-capability", response_model=GridCapabilityResponse)
 async def get_grid_capability(project_name: str):
-    """当前项目的宫格档位上限。
+    """当前项目的宫格容量及精确布局表。
 
-    前端批次预览据此镜像后端阶梯——预览与入队若各自判定 4K 门控，批次数会漂移。
+    前端消费后端规划结果，避免独立计算布局导致预览与入队不一致。
     路径不挂在 ``/grids/`` 下，避免与 ``/grids/{grid_id}`` 抢匹配。
     """
     with domain_error_on_value_error(lambda _exc: BadRequestError("invalid_project_name", name=project_name)):
         project = get_project_manager().load_project(project_name)
     allowed = await resolve_large_grid_allowed(project)
+    with domain_error_on_value_error(lambda _exc: BadRequestError("grid_layout_unavailable")):
+        aspect = video_aspect_ratio_of(project)
+    limit = max_cell_count(allow_large_grid=allowed)
+    layouts = []
+    for count in range(1, limit + 1):
+        with domain_error_on_value_error(lambda _exc: BadRequestError("grid_layout_unavailable")):
+            layout = calculate_grid_layout(count, aspect, allow_large_grid=allowed)
+        if layout is not None:
+            layouts.append(
+                {
+                    "scene_count": count,
+                    "grid_size": layout.grid_size,
+                    "rows": layout.rows,
+                    "cols": layout.cols,
+                    "cell_count": layout.cell_count,
+                    "placeholder_count": layout.placeholder_count,
+                    "grid_aspect_ratio": layout.grid_aspect_ratio,
+                }
+            )
     return GridCapabilityResponse(
         large_grid_allowed=allowed,
-        max_cell_count=max_cell_count(allow_large_grid=allowed),
+        max_cell_count=limit,
+        video_aspect_ratio=aspect,
+        layouts=layouts,
     )
 
 
@@ -361,9 +394,26 @@ async def regenerate_grid(project_name: str, grid_id: str, user: CurrentUser):
 # ==================== 切分落格 ====================
 
 
+class SplitGridRequest(BaseModel):
+    review_token: str | None = None
+
+
+@router.get("/grids/{grid_id}/split-preview")
+async def get_grid_split_preview(project_name: str, grid_id: str):
+    """Preview exact crops; no storyboards or version records are written."""
+    _load_project_for_grid_write(project_name)
+    project_path = get_project_manager().get_project_path(project_name)
+    grid = _load_grid_or_404(project_path, grid_id)
+    _ensure_grid_idle(grid)
+    try:
+        return await preview_grid_split(project_name, grid)
+    except GridImageNotReadyError as exc:
+        raise BadRequestError("grid_image_not_ready", grid_id=grid_id) from exc
+
+
 @router.post("/grids/{grid_id}/split")
-async def split_grid(project_name: str, grid_id: str):
-    """按当前联合图切分并覆写各分镜格——唯一覆写分镜格的操作，直接执行不设确认。
+async def split_grid(project_name: str, grid_id: str, req: SplitGridRequest | None = None):
+    """按用户已预览确认的联合图切分并覆写各分镜格。
 
     逐格覆写前旧文件补登版本、覆写后登记新版本；frame_chain 中已不在剧本内的
     scene id 跳过（missing_scene_ids 返回）。切坏可在分镜格的版本史逐格回滚。
@@ -377,7 +427,7 @@ async def split_grid(project_name: str, grid_id: str):
 
     try:
         with project_change_source("webui"):
-            result = await apply_grid_split(project_name, grid)
+            result = await apply_grid_split(project_name, grid, review_token=req.review_token if req else None)
     except GridImageNotReadyError as exc:
         # 服务侧兜底（与上方预检间存在文件被并发删除的窗口）
         raise BadRequestError("grid_image_not_ready", grid_id=grid_id) from exc

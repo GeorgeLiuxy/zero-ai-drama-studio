@@ -3,9 +3,10 @@ import { Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { API } from "@/api";
 import { useAppStore } from "@/stores/app-store";
-import { groupBySegmentBreak, computeGridSize, matchGridsForGroup } from "@/utils/grid-layout";
+import { useProjectsStore } from "@/stores/projects-store";
+import { groupBySegmentBreak, planGridChunks, matchGridsForGroup } from "@/utils/grid-layout";
 import { GridPreviewPanel } from "@/components/canvas/timeline/GridPreviewPanel";
-import type { GridGeneration } from "@/types/grid";
+import type { GridCapability, GridGeneration } from "@/types/grid";
 import type { NarrationSegment, DramaScene } from "@/types";
 
 type Segment = NarrationSegment | DramaScene;
@@ -42,9 +43,16 @@ export function GridPreviewView({
   const [grids, setGrids] = useState<GridGeneration[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [generatingGroups, setGeneratingGroups] = useState<Set<string>>(new Set());
-  // 单张宫格的格数上限由后端给：4×4 / 5×5 的 4K 门控要经供应商解析才能定，前端自行推导
-  // 必然与入队口径漂移。取不到时 computeGridSize 用保守默认值。
-  const [maxCellCount, setMaxCellCount] = useState<number | undefined>(undefined);
+  const capabilityKey = useProjectsStore((state) => {
+    const project = state.currentProjectName === projectName ? state.currentProjectData : null;
+    return JSON.stringify([
+      project?.aspect_ratio, project?.image_backend, project?.default_image_backend,
+      project?.image_provider_t2i, project?.image_provider_i2i, project?.model_settings,
+    ]);
+  });
+  const [capabilityResult, setCapabilityResult] = useState<{ project: string; key: string; value: GridCapability } | null>(null);
+  const capability = capabilityResult?.project === projectName && capabilityResult.key === capabilityKey
+    ? capabilityResult.value : null;
 
   const groups = useMemo(() => groupBySegmentBreak(segments), [segments]);
 
@@ -54,11 +62,11 @@ export function GridPreviewView({
     API.getGridCapability(projectName, { signal: controller.signal })
       .then((cap) => {
         if (controller.signal.aborted) return;
-        setMaxCellCount(cap.max_cell_count);
+        setCapabilityResult({ project: projectName, key: capabilityKey, value: cap });
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [projectName]);
+  }, [projectName, capabilityKey, gridsRevision]);
 
   const refreshGrids = useCallback(() => {
     if (!projectName) return;
@@ -105,11 +113,10 @@ export function GridPreviewView({
   );
 
   const stats = useMemo(() => {
-    // 一个分组超过单张格数上限时后端会切成多张宫格,批次数按实际入队张数累计
-    const batches = groups.reduce(
-      (sum, group) => sum + computeGridSize(group.length, maxCellCount).batchCount,
-      0,
-    );
+    const plans = groups.map((group) => planGridChunks(group.length, capability));
+    const batches = plans.every((plan) => plan !== null)
+      ? plans.reduce((sum, plan) => sum + plan.length, 0)
+      : "—";
     const cells = segments.length;
     const readyBatches = groups.filter((group) => {
       const sceneIds = group.map((s) => getSegmentId(s, contentMode));
@@ -126,7 +133,7 @@ export function GridPreviewView({
     // 就绪率按分组算(一组内多张宫格全部完成才算就绪),分母用分组数而非宫格张数
     const percent = groups.length > 0 ? Math.round((readyBatches / groups.length) * 100) : 0;
     return { batches, cells, percent };
-  }, [groups, segments, grids, episode, contentMode, maxCellCount]);
+  }, [groups, segments, grids, episode, contentMode, capability]);
 
   if (segments.length === 0) {
     return (
@@ -160,7 +167,7 @@ export function GridPreviewView({
 
       <div className="flex flex-col gap-3">
         {groups.map((group, idx) => {
-          const layout = computeGridSize(group.length, maxCellCount);
+          const chunks = planGridChunks(group.length, capability);
           const ids = getGridIdsForGroup(group);
           const groupKey = group
             .map((s) => getSegmentId(s, contentMode))
@@ -191,8 +198,7 @@ export function GridPreviewView({
                   {t("grid_preview_batch_card_title", {
                     index: idx + 1,
                     cellCount: group.length,
-                    rows: layout.rows,
-                    cols: layout.cols,
+                    batches: chunks?.length ?? "—",
                   })}
                 </span>
                 <span className="flex-1" />
@@ -217,6 +223,21 @@ export function GridPreviewView({
                     </span>
                   </button>
                 )}
+              </div>
+              <div className="space-y-1 px-4 py-2 text-xs" style={{ color: "var(--color-text-3)" }}>
+                {chunks ? chunks.map((chunk, chunkIndex) => (
+                  <p key={chunkIndex}>
+                    {t("grid_preview_chunk_plan", {
+                      index: chunkIndex + 1,
+                      scenes: chunk.scene_count,
+                      rows: chunk.rows,
+                      cols: chunk.cols,
+                      placeholders: chunk.placeholder_count,
+                      canvasRatio: chunk.grid_aspect_ratio,
+                      frameRatio: capability?.video_aspect_ratio,
+                    })}
+                  </p>
+                )) : <p>{t("grid_preview_layout_unavailable")}</p>}
               </div>
               <GridPreviewPanel
                 projectName={projectName}

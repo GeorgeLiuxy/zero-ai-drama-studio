@@ -3,13 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from fractions import Fraction
+from math import gcd, lcm
 from typing import TYPE_CHECKING, Any
+
+from lib.video_visual_provenance import resolve_video_aspect_ratio
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-# Base resolution for grid rendering (width reference for 16:9)
 _BASE_WIDTH = 1920
+_MAX_GRID_SIDE = 5
+_MAX_CANVAS_STRETCH = 3
+
+
+def _parse_aspect_ratio(aspect_ratio: str) -> tuple[int, int]:
+    """Read a positive integer width:height without substituting its orientation."""
+    try:
+        width, height = (int(part) for part in aspect_ratio.split(":"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(f"无效的画面比例 {aspect_ratio!r}，应为正整数宽:高") from exc
+    if width <= 0 or height <= 0:
+        raise ValueError(f"无效的画面比例 {aspect_ratio!r}，宽和高必须为正整数")
+    divisor = gcd(width, height)
+    return width // divisor, height // divisor
 
 
 @dataclass(frozen=True)
@@ -24,122 +41,102 @@ class GridLayout:
     placeholder_count: int
 
     def pixel_dimensions(self) -> tuple[int, int]:
-        """Return (width, height) in pixels based on grid_aspect_ratio."""
-        w_str, h_str = self.grid_aspect_ratio.split(":")
-        w_ratio = int(w_str)
-        h_ratio = int(h_str)
-        # Scale so that the larger dimension matches the base reference
-        if w_ratio >= h_ratio:
-            width = _BASE_WIDTH
-            height = round(_BASE_WIDTH * h_ratio / w_ratio)
-        else:
-            height = _BASE_WIDTH
-            width = round(_BASE_WIDTH * w_ratio / h_ratio)
-        return width, height
+        """Return an exact-ratio canvas divisible into identical integer cells.
+
+        The largest edge stays at or below the base reference when the minimum
+        exact canvas fits it. Large irreducible ratios use that minimum canvas.
+        These requested dimensions do not certify a provider's returned image.
+        """
+        if self.rows <= 0 or self.cols <= 0:
+            raise ValueError("宫格行数和列数必须为正整数")
+        width, height = _parse_aspect_ratio(self.grid_aspect_ratio)
+        factor = lcm(self.cols // gcd(width, self.cols), self.rows // gcd(height, self.rows))
+        unit_width, unit_height = width * factor, height * factor
+        scale = max(1, _BASE_WIDTH // max(unit_width, unit_height))
+        return unit_width * scale, unit_height * scale
 
 
 # 未配置分辨率档时宫格渲染实际下发的档位（与 ``execute_grid_task`` 同源）
 GRID_FALLBACK_RESOLUTION = "2K"
 
-# 大宫格（4×4 / 5×5）要求的图像分辨率档：单格分辨率随格数缩水，低于该档时单格已不足以
-# 支撑下游视频画质，故按档位封顶到 3×3。
 _LARGE_GRID_RESOLUTION = "4K"
-
-# 档位阶梯：全部为 N×N 平方切分，单格比例因而恒等于整图比例，切格后 center-crop 近乎 no-op。
-# 顺序即选档顺序，(cell_count, grid_size, side)。
-_GRID_LADDER: tuple[tuple[int, str, int], ...] = (
-    (4, "grid_4", 2),
-    (9, "grid_9", 3),
-    (16, "grid_16", 4),
-    (25, "grid_25", 5),
-)
-
-# 整图比例直接取项目视频比例的规范朝向，单格比例与之一致
-_ORIENTATION_ASPECT: dict[str, str] = {"horizontal": "16:9", "vertical": "9:16"}
-
-# 存量 grid_6（曾经唯一的非方形档）写入时的整图比例，按 (rows, cols) 索引
-_LEGACY_NON_SQUARE_ASPECT: dict[tuple[int, int], str] = {(3, 2): "4:3", (2, 3): "3:4"}
-
 _GATED_MAX_CELL_COUNT = 9
 _MAX_CELL_COUNT = 25
 
 
 def large_grid_allowed(image_resolution: str | None) -> bool:
-    """4×4 / 5×5 是否可用：仅当宫格实际生效的图像分辨率档为 4K。
+    """Only the effective 4K resolution tier permits more than nine cells.
 
-    ``None`` 表示调用时不传 SDK resolution 参数（见 ``docs/adr/0019``），按保底档处理。
+    This capacity guard does not guarantee sufficient pixels in a returned cell;
+    the returned image still needs validation before it becomes a video input.
     """
     return (image_resolution or GRID_FALLBACK_RESOLUTION).strip().upper() == _LARGE_GRID_RESOLUTION
 
 
 def max_cell_count(*, allow_large_grid: bool) -> int:
-    """单张宫格的格数上限；分组超出时由调用方按此切块。"""
+    """单张宫格的格数上限，不限定宫格必须为正方形。"""
     return _MAX_CELL_COUNT if allow_large_grid else _GATED_MAX_CELL_COUNT
 
 
 def video_aspect_ratio_of(project: dict[str, Any]) -> str:
-    """项目的视频比例，宫格画布与冻结在记录上的单格比例共用同一取值。
-
-    project.json 中 aspect_ratio 允许显式写入 null（Pydantic 模型为 str | None），
-    dict.get(key, default) 遇到值为 None 的既有 key 不会回退默认值，须显式判空——
-    None 会一路流进画布几何、prompt 与记录上的冻结值。
-    """
-    raw = project.get("aspect_ratio")
-    return raw if raw is not None else _ORIENTATION_ASPECT["vertical"]
-
-
-def _orientation_of(aspect_ratio: str) -> str:
-    """Determine orientation by comparing width and height numerically."""
-    parts = aspect_ratio.split(":")
-    w_ratio, h_ratio = int(parts[0]), int(parts[1])
-    return "horizontal" if w_ratio > h_ratio else "vertical"
+    """Return the project's exact video ratio, defaulting only when it is unset."""
+    width, height = _parse_aspect_ratio(resolve_video_aspect_ratio(project))
+    return f"{width}:{height}"
 
 
 def grid_aspect_ratio_for(rows: int, cols: int, aspect_ratio: str) -> str:
-    """按记录自身的 rows/cols 取整图比例，供存量记录重生成使用。
-
-    方形档（rows == cols）下结果即视频比例本身，与 :func:`calculate_grid_layout` 一致。
-    非方形只可能来自存量 grid_6 记录，取其写入时的比例：重生成沿用记录里冻结的 prompt，
-    下发的比例必须与该 prompt 描述的画布一致；按单格比例反推出的几何自洽比例（3×2 → 32:27）
-    既与 prompt 矛盾，也不在各图像 backend 的尺寸表内，会被静默回退成近方图。
-    未登记的非方形几何回落到视频比例——同样是各 backend 都认得的比例。
-    """
-    video_aspect = _ORIENTATION_ASPECT[_orientation_of(aspect_ratio)]
-    if rows == cols:
-        return video_aspect
-    return _LEGACY_NON_SQUARE_ASPECT.get((rows, cols), video_aspect)
+    """Compute canvas width:height from equal cells without borders or gutters."""
+    if rows <= 0 or cols <= 0:
+        raise ValueError("宫格行数和列数必须为正整数")
+    cell_width, cell_height = _parse_aspect_ratio(aspect_ratio)
+    width, height = cols * cell_width, rows * cell_height
+    divisor = gcd(width, height)
+    return f"{width // divisor}:{height // divisor}"
 
 
 def calculate_grid_layout(num_scenes: int, aspect_ratio: str, *, allow_large_grid: bool = False) -> GridLayout | None:
-    """Calculate the appropriate grid layout for the given number of scenes.
+    """Choose a bounded rectangular layout while keeping every cell's ratio.
 
-    Args:
-        num_scenes: Number of scenes to display in the grid.
-        aspect_ratio: Aspect ratio string (e.g. "16:9", "9:16", "4:3").
-        allow_large_grid: 是否放行 4×4 / 5×5 档（由调用方按生效分辨率档经
-            :func:`large_grid_allowed` 判定）。默认关闭，未显式传入的调用方封顶 3×3。
-
-    Returns:
-        GridLayout if num_scenes >= 1, otherwise None.
+    Candidates have at most five rows/columns and canvas ratios from 1:3 to 3:1.
+    Fewer placeholders wins first, followed by a canvas closer to square.
+    Reciprocal video ratios produce transposed layouts. Counts over the capacity
+    describe the first full chunk; use plan_grid_chunks to retain every scene.
     """
     if num_scenes < 1:
         return None
 
+    cell_width, cell_height = _parse_aspect_ratio(aspect_ratio)
     cap = max_cell_count(allow_large_grid=allow_large_grid)
     effective = min(num_scenes, cap)
-    cell_count, grid_size, side = next(cfg for cfg in _GRID_LADDER if effective <= cfg[0])
+    candidates: list[tuple[tuple[int, Fraction, int, int, int], int, int]] = []
+    for rows in range(1, _MAX_GRID_SIDE + 1):
+        for cols in range(1, _MAX_GRID_SIDE + 1):
+            count = rows * cols
+            if not effective <= count <= cap:
+                continue
+            width, height = cols * cell_width, rows * cell_height
+            stretch = Fraction(max(width, height), min(width, height))
+            if stretch > _MAX_CANVAS_STRETCH:
+                continue
+            oriented = cols >= rows if cell_width <= cell_height else rows >= cols
+            leading, trailing = (rows, cols) if cell_width <= cell_height else (cols, rows)
+            score = (count - effective, stretch, int(not oriented), leading, trailing)
+            candidates.append((score, rows, cols))
 
-    rows = cols = side
-    grid_aspect_ratio = _ORIENTATION_ASPECT[_orientation_of(aspect_ratio)]
-    placeholder_count = cell_count - effective
-
+    if not candidates:
+        raise ValueError(
+            f"视频比例 {aspect_ratio} 无法在当前单张上限 {cap} 格内为 {effective} 个分镜安排可靠宫格；"
+            "请减少同组分镜数量或逐张生成首帧"
+        )
+    _, rows, cols = min(candidates)
+    count = rows * cols
     return GridLayout(
-        grid_size=grid_size,
+        grid_size=f"grid_{count}",
         rows=rows,
         cols=cols,
-        grid_aspect_ratio=grid_aspect_ratio,
-        cell_count=cell_count,
-        placeholder_count=placeholder_count,
+        grid_aspect_ratio=grid_aspect_ratio_for(rows, cols, aspect_ratio),
+        cell_count=count,
+        placeholder_count=count - effective,
     )
 
 
@@ -149,23 +146,16 @@ def plan_grid_chunks[T](
     *,
     allow_large_grid: bool = False,
 ) -> list[tuple[list[T], GridLayout]]:
-    """把一个场景分组按单张宫格的格数上限切块，返回各块及其布局。
+    """Split a scene group in order and choose the exact layout for every chunk.
 
-    「分组 → 按 :func:`max_cell_count` 切块 → 布局」的唯一实现：入队、预览、
-    费用估算消费同一产出，宫格张数与档位才不会各自漂移。首块按分组整体选档，
-    末块不足一档时落到更小档并由占位格补齐；各块场景不重叠、并集等于整组、
-    顺序保持原分组顺序（首尾帧链按块内自洽，块间不接链）。
-
-    分组为空时返回空列表。
+    Generation, previews and cost estimates consume this same plan. Placeholders
+    belong to a canvas only and never enter the ordered scene list.
     """
-    layout = calculate_grid_layout(len(group), aspect_ratio, allow_large_grid=allow_large_grid)
-    if layout is None:
-        return []
+    cap = max_cell_count(allow_large_grid=allow_large_grid)
     plans: list[tuple[list[T], GridLayout]] = []
-    for i in range(0, len(group), layout.cell_count):
-        chunk = list(group[i : i + layout.cell_count])
-        chunk_layout = calculate_grid_layout(len(chunk), aspect_ratio, allow_large_grid=allow_large_grid)
-        if chunk_layout is None:  # pragma: no cover — chunk 恒非空，不可达
-            continue
-        plans.append((chunk, chunk_layout))
+    for offset in range(0, len(group), cap):
+        chunk = list(group[offset : offset + cap])
+        layout = calculate_grid_layout(len(chunk), aspect_ratio, allow_large_grid=allow_large_grid)
+        if layout is not None:
+            plans.append((chunk, layout))
     return plans

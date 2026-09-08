@@ -12,167 +12,92 @@ from lib.grid.layout import (
     video_aspect_ratio_of,
 )
 from lib.grid.models import GridGeneration, build_frame_chain
-from lib.grid.prompt_builder import _compute_panel_aspect
 
 
 class TestCalculateGridLayout:
-    def test_4_scenes_horizontal(self):
-        layout = calculate_grid_layout(4, "16:9")
-        assert layout is not None
-        assert layout.grid_size == "grid_4"
-        assert layout.rows == 2
-        assert layout.cols == 2
-        assert layout.grid_aspect_ratio == "16:9"
-        assert layout.cell_count == 4
-        assert layout.placeholder_count == 0
-
-    def test_4_scenes_vertical(self):
-        layout = calculate_grid_layout(4, "9:16")
-        assert layout is not None
-        assert layout.grid_size == "grid_4"
-        assert layout.rows == 2
-        assert layout.cols == 2
-        assert layout.grid_aspect_ratio == "9:16"
-        assert layout.cell_count == 4
-        assert layout.placeholder_count == 0
-
-    @pytest.mark.parametrize("n", [5, 6])
-    def test_5_and_6_scenes_fall_into_grid_9_with_placeholders(self, n: int):
-        layout = calculate_grid_layout(n, "9:16")
-        assert layout is not None
-        assert layout.grid_size == "grid_9"
-        assert layout.rows == 3
-        assert layout.cols == 3
-        assert layout.grid_aspect_ratio == "9:16"
-        assert layout.cell_count == 9
-        assert layout.placeholder_count == 9 - n
-
-    def test_7_scenes_uses_grid_9(self):
-        layout = calculate_grid_layout(7, "16:9")
-        assert layout is not None
-        assert layout.grid_size == "grid_9"
-        assert layout.rows == 3
-        assert layout.cols == 3
-        assert layout.cell_count == 9
-        assert layout.placeholder_count == 2
-
-    def test_9_scenes(self):
-        layout = calculate_grid_layout(9, "16:9")
-        assert layout is not None
-        assert layout.grid_size == "grid_9"
-        assert layout.cell_count == 9
-        assert layout.placeholder_count == 0
-
-    def test_below_4_uses_grid_4_with_placeholders(self):
-        for n in (1, 2, 3):
-            layout = calculate_grid_layout(n, "16:9")
-            assert layout is not None
-            assert layout.grid_size == "grid_4"
-            assert layout.cell_count == 4
-            assert layout.placeholder_count == 4 - n
-
-    def test_zero_returns_none(self):
-        assert calculate_grid_layout(0, "16:9") is None
-
-    def test_above_9_caps_at_grid_9_without_large_grid(self):
-        layout = calculate_grid_layout(12, "16:9")
-        assert layout is not None
-        assert layout.grid_size == "grid_9"
-        assert layout.cell_count == 9
-
     @pytest.mark.parametrize(
-        ("n", "grid_size", "side"),
+        ("count", "aspect_ratio", "large", "rows", "cols", "canvas", "placeholders"),
         [
-            (4, "grid_4", 2),
-            (9, "grid_9", 3),
-            (10, "grid_16", 4),
-            (16, "grid_16", 4),
-            (17, "grid_25", 5),
-            (25, "grid_25", 5),
+            (1, "9:16", False, 1, 1, "9:16", 0),
+            (2, "9:16", False, 1, 2, "9:8", 0),
+            (3, "9:16", False, 1, 3, "27:16", 0),
+            (4, "9:16", False, 2, 2, "9:16", 0),
+            (5, "9:16", False, 1, 5, "45:16", 0),
+            (6, "9:16", False, 2, 3, "27:32", 0),
+            (7, "9:16", False, 2, 4, "9:8", 1),
+            (9, "9:16", False, 3, 3, "9:16", 0),
+            (12, "9:16", False, 3, 3, "9:16", 0),
+            (12, "9:16", True, 3, 4, "3:4", 0),
+            (12, "16:9", True, 4, 3, "4:3", 0),
+            (10, "9:16", True, 2, 5, "45:32", 0),
+            (16, "9:16", True, 4, 4, "9:16", 0),
+            (17, "9:16", True, 4, 5, "45:64", 3),
+            (25, "9:16", True, 5, 5, "9:16", 0),
+            (40, "9:16", True, 5, 5, "9:16", 0),
+            (4, "4:3", False, 2, 2, "4:3", 0),
+            (6, "3:4", False, 2, 3, "9:8", 0),
+            (6, "1:1", False, 2, 3, "3:2", 0),
+            (4, "8:6", False, 2, 2, "4:3", 0),
         ],
     )
-    def test_large_grid_ladder(self, n: int, grid_size: str, side: int):
-        layout = calculate_grid_layout(n, "16:9", allow_large_grid=True)
-        assert layout is not None
-        assert layout.grid_size == grid_size
-        assert (layout.rows, layout.cols) == (side, side)
-        assert layout.cell_count == side * side
-        assert layout.placeholder_count == side * side - n
+    def test_count_and_video_ratio_choose_layout(self, count, aspect_ratio, large, rows, cols, canvas, placeholders):
+        layout = calculate_grid_layout(count, aspect_ratio, allow_large_grid=large)
 
-    def test_above_25_caps_at_grid_25(self):
-        layout = calculate_grid_layout(40, "16:9", allow_large_grid=True)
         assert layout is not None
-        assert layout.grid_size == "grid_25"
-        assert layout.cell_count == 25
-        assert layout.placeholder_count == 0
+        assert (layout.rows, layout.cols) == (rows, cols)
+        assert layout.grid_aspect_ratio == canvas
+        assert layout.grid_size == f"grid_{rows * cols}"
+        assert layout.cell_count == rows * cols
+        assert layout.placeholder_count == placeholders
 
-    @pytest.mark.parametrize("n", [10, 17, 40])
-    def test_large_grid_gated_off_never_exceeds_grid_9(self, n: int):
-        layout = calculate_grid_layout(n, "16:9", allow_large_grid=False)
-        assert layout is not None
-        assert layout.grid_size == "grid_9"
-        assert layout.cell_count == 9
+    @pytest.mark.parametrize("count", [0, -1])
+    def test_no_scenes_returns_none(self, count):
+        assert calculate_grid_layout(count, "16:9") is None
 
-    @pytest.mark.parametrize("aspect_ratio", ["16:9", "9:16"])
-    @pytest.mark.parametrize("n", [4, 9, 16, 25])
-    def test_square_grid_aspect_equals_video_aspect(self, n: int, aspect_ratio: str):
-        layout = calculate_grid_layout(n, aspect_ratio, allow_large_grid=True)
-        assert layout is not None
-        assert layout.rows == layout.cols
-        assert layout.grid_aspect_ratio == aspect_ratio
-        # 单格比例与整图一致，切格后 center-crop 是 no-op
-        assert _compute_panel_aspect(layout.grid_aspect_ratio, layout.rows, layout.cols) == aspect_ratio
+    @pytest.mark.parametrize("aspect_ratio", ["", "portrait", "0:16", "9:-16", "1.5:1", "1:2:3"])
+    def test_invalid_video_ratio_is_not_replaced_by_orientation(self, aspect_ratio):
+        with pytest.raises(ValueError, match="比例"):
+            calculate_grid_layout(4, aspect_ratio)
 
-    def test_non_canonical_aspect_maps_to_orientation(self):
-        layout = calculate_grid_layout(4, "4:3")
-        assert layout is not None
-        assert layout.grid_aspect_ratio == "16:9"
+    def test_impossible_canvas_fails_without_changing_frame_ratio(self):
+        with pytest.raises(ValueError, match="逐张生成"):
+            calculate_grid_layout(9, "100:1")
+
+    @pytest.mark.parametrize("count", [1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 17, 25])
+    @pytest.mark.parametrize("portrait", ["9:16", "3:4", "2:3"])
+    def test_reciprocal_video_ratios_transpose_layout(self, count, portrait):
+        width, height = portrait.split(":")
+        vertical = calculate_grid_layout(count, portrait, allow_large_grid=True)
+        horizontal = calculate_grid_layout(count, f"{height}:{width}", allow_large_grid=True)
+
+        assert vertical is not None
+        assert horizontal is not None
+        assert (horizontal.rows, horizontal.cols) == (vertical.cols, vertical.rows)
+        vw, vh = vertical.grid_aspect_ratio.split(":")
+        assert horizontal.grid_aspect_ratio == f"{vh}:{vw}"
 
 
 class TestPlanGridChunks:
     def test_empty_group_returns_no_plans(self):
         assert plan_grid_chunks([], "16:9") == []
 
-    def test_group_within_cap_is_single_chunk(self):
-        scenes = [f"S{i}" for i in range(1, 8)]
-        plans = plan_grid_chunks(scenes, "16:9")
-        assert len(plans) == 1
-        chunk, layout = plans[0]
-        assert chunk == scenes
-        assert layout.grid_size == "grid_9"
-        assert layout.placeholder_count == 2
+    @pytest.mark.parametrize(
+        ("count", "large", "expected"),
+        [
+            (7, False, [(7, 2, 4, 1)]),
+            (12, False, [(9, 3, 3, 0), (3, 1, 3, 0)]),
+            (12, True, [(12, 3, 4, 0)]),
+            (19, False, [(9, 3, 3, 0), (9, 3, 3, 0), (1, 1, 1, 0)]),
+            (30, True, [(25, 5, 5, 0), (5, 1, 5, 0)]),
+        ],
+    )
+    def test_chunks_preserve_scene_order_without_placeholder_scenes(self, count, large, expected):
+        scenes = [f"S{i:02d}" for i in range(count)]
+        plans = plan_grid_chunks(scenes, "9:16", allow_large_grid=large)
 
-    def test_group_above_cap_splits_into_multiple_chunks(self):
-        scenes = [f"S{i:02d}" for i in range(1, 13)]
-        plans = plan_grid_chunks(scenes, "9:16", allow_large_grid=False)
-        assert [(len(chunk), layout.grid_size) for chunk, layout in plans] == [(9, "grid_9"), (3, "grid_4")]
-        # 各块不重叠、并集等于整组、顺序保持
-        assert [s for chunk, _ in plans for s in chunk] == scenes
-
-    def test_remainder_chunk_falls_to_smaller_tier_with_placeholders(self):
-        scenes = [f"S{i:02d}" for i in range(1, 13)]
-        plans = plan_grid_chunks(scenes, "9:16")
-        _, tail_layout = plans[-1]
-        assert (tail_layout.rows, tail_layout.cols) == (2, 2)
-        assert tail_layout.placeholder_count == 1
-
-    def test_large_grid_keeps_group_in_one_chunk(self):
-        scenes = [f"S{i:02d}" for i in range(1, 13)]
-        plans = plan_grid_chunks(scenes, "16:9", allow_large_grid=True)
-        assert [(len(chunk), layout.grid_size) for chunk, layout in plans] == [(12, "grid_16")]
-
-    def test_above_25_splits_even_with_large_grid(self):
-        scenes = [f"S{i:02d}" for i in range(1, 31)]
-        plans = plan_grid_chunks(scenes, "16:9", allow_large_grid=True)
-        assert [(len(chunk), layout.grid_size) for chunk, layout in plans] == [(25, "grid_25"), (5, "grid_9")]
-        assert [s for chunk, _ in plans for s in chunk] == scenes
-
-    def test_every_chunk_fits_its_layout(self):
-        for n in (1, 4, 9, 10, 18, 27):
-            plans = plan_grid_chunks(list(range(n)), "16:9", allow_large_grid=False)
-            assert sum(len(chunk) for chunk, _ in plans) == n
-            for chunk, layout in plans:
-                assert len(chunk) <= layout.cell_count == layout.rows * layout.cols
+        assert [(len(chunk), layout.rows, layout.cols, layout.placeholder_count) for chunk, layout in plans] == expected
+        assert [scene for chunk, _ in plans for scene in chunk] == scenes
+        assert all(len(chunk) + layout.placeholder_count == layout.cell_count for chunk, layout in plans)
 
 
 class TestLargeGridGate:
@@ -194,39 +119,42 @@ class TestLargeGridGate:
 
 
 class TestGridAspectRatioFor:
-    @pytest.mark.parametrize("side", [2, 3, 4, 5])
-    def test_square_records_keep_video_aspect(self, side: int):
-        assert grid_aspect_ratio_for(side, side, "16:9") == "16:9"
-        assert grid_aspect_ratio_for(side, side, "9:16") == "9:16"
+    @pytest.mark.parametrize(
+        ("rows", "cols", "aspect", "expected"),
+        [
+            (4, 3, "9:16", "27:64"),
+            (3, 4, "9:16", "3:4"),
+            (4, 3, "16:9", "4:3"),
+            (3, 2, "16:9", "32:27"),
+            (2, 3, "9:16", "27:32"),
+            (2, 4, "16:9", "32:9"),
+            (3, 3, "4:3", "4:3"),
+            (3, 3, "8:6", "4:3"),
+        ],
+    )
+    def test_canvas_uses_exact_cell_geometry(self, rows, cols, aspect, expected):
+        assert grid_aspect_ratio_for(rows, cols, aspect) == expected
 
-    def test_legacy_non_square_record_keeps_original_aspect(self):
-        # 存量 grid_6 记录沿用写入时的整图比例，与其冻结的 prompt 描述的画布一致
-        assert grid_aspect_ratio_for(3, 2, "16:9") == "4:3"
-        assert grid_aspect_ratio_for(2, 3, "9:16") == "3:4"
-
-    def test_unregistered_non_square_falls_back_to_video_aspect(self):
-        # 未登记的非方形几何回落到 backend 尺寸表都认得的视频比例，而非自行推算的冷门比例
-        assert grid_aspect_ratio_for(2, 4, "16:9") == "16:9"
+    @pytest.mark.parametrize(("rows", "cols"), [(0, 3), (3, -1)])
+    def test_invalid_grid_dimensions_are_rejected(self, rows, cols):
+        with pytest.raises(ValueError, match="正整数"):
+            grid_aspect_ratio_for(rows, cols, "16:9")
 
 
 class TestGridLayoutPixelDimensions:
-    def test_16_9_pixel_dimensions(self):
-        layout = calculate_grid_layout(4, "16:9")
+    @pytest.mark.parametrize("aspect", ["16:9", "9:16", "4:3", "1:1", "37:29"])
+    @pytest.mark.parametrize("count", [1, 3, 6, 7, 9, 12, 17, 25])
+    def test_canvas_and_each_cell_have_exact_integer_geometry(self, count, aspect):
+        layout = calculate_grid_layout(count, aspect, allow_large_grid=True)
         assert layout is not None
         width, height = layout.pixel_dimensions()
-        assert width > 0
-        assert height > 0
-        # 16:9 ratio
-        assert abs(width / height - 16 / 9) < 0.01
+        target_width, target_height = (int(part) for part in aspect.split(":"))
 
-    def test_9_16_pixel_dimensions(self):
-        layout = calculate_grid_layout(4, "9:16")
-        assert layout is not None
-        width, height = layout.pixel_dimensions()
         assert width > 0
         assert height > 0
-        # 9:16 ratio
-        assert abs(width / height - 9 / 16) < 0.01
+        assert width % layout.cols == 0
+        assert height % layout.rows == 0
+        assert (width // layout.cols) * target_height == (height // layout.rows) * target_width
 
 
 class TestBuildFrameChain:
@@ -285,3 +213,11 @@ class TestVideoAspectRatioOf:
         # project.json 允许把 aspect_ratio 显式写为 null，dict.get 的默认值对此无效；
         # None 漏下去会流进画布几何、prompt 与记录上冻结的比例
         assert video_aspect_ratio_of({"aspect_ratio": None}) == "9:16"
+
+    @pytest.mark.parametrize(("mode", "expected"), [("drama", "16:9"), ("narration", "9:16"), ("ad", "9:16")])
+    def test_missing_ratio_matches_actual_video_generation_default(self, mode, expected):
+        assert video_aspect_ratio_of({"content_mode": mode, "aspect_ratio": None}) == expected
+
+    def test_legacy_resource_mapping_uses_video_ratio(self):
+        project = {"aspect_ratio": {"storyboards": "1:1", "videos": "8:6"}, "content_mode": "drama"}
+        assert video_aspect_ratio_of(project) == "4:3"

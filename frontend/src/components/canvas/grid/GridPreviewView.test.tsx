@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API } from "@/api";
+import { useProjectsStore } from "@/stores/projects-store";
 import type { NarrationSegment } from "@/types";
 import { GridPreviewView } from "./GridPreviewView";
 
@@ -37,40 +38,61 @@ function renderView(segments: NarrationSegment[]) {
 
 beforeEach(() => {
   vi.spyOn(API, "listGrids").mockResolvedValue([]);
+  useProjectsStore.setState({ currentProjectName: null, currentProjectData: null });
 });
 
-describe("GridPreviewView 的档位与批次预览", () => {
-  it("放行大宫格时按 5×5 切块，批次数取实际入队张数", async () => {
+describe("GridPreviewView 的动态布局预览", () => {
+  it.each([
+    ["9:16", 3, 4, "3:4"],
+    ["16:9", 4, 3, "4:3"],
+    ["4:3", 3, 4, "16:9"],
+  ])("12 个 %s 首帧按后端布局展示行列与两种比例", async (ratio, rows, cols, canvasRatio) => {
     vi.spyOn(API, "getGridCapability").mockResolvedValue({
-      large_grid_allowed: true,
-      max_cell_count: 25,
+      large_grid_allowed: true, max_cell_count: 25, video_aspect_ratio: ratio,
+      layouts: [{ scene_count: 12, grid_size: "grid_12", rows, cols, cell_count: 12, placeholder_count: 0, grid_aspect_ratio: canvasRatio }],
     });
-
-    renderView(makeSegments(30));
-
-    // 30 格按 25 一张切成 2 张，摘要的批次数须跟随张数而非分组数（分组只有 1 个）
-    await waitFor(() => expect(screen.getByText(/^2 批 · 30 格/)).toBeInTheDocument());
-    expect(screen.getByText(/5×5/)).toBeInTheDocument();
+    renderView(makeSegments(12));
+    expect(await screen.findByText("组 #1 · 12 个分镜 · 预计 1 张联合图")).toBeInTheDocument();
+    expect(screen.getByText(`预计第 1 张：12 个分镜 · ${rows} 行 × ${cols} 列 · 0 个占位 · 联合图 ${canvasRatio} · 首帧 ${ratio}`)).toBeInTheDocument();
   });
-
-  it("门控生效时封顶 3×3，同一批场景切成更多张", async () => {
+  it("12 个分镜分成 9+3 时分别展示两个实际模板，不把总数标为 3×3", async () => {
     vi.spyOn(API, "getGridCapability").mockResolvedValue({
-      large_grid_allowed: false,
-      max_cell_count: 9,
+      large_grid_allowed: false, max_cell_count: 9, video_aspect_ratio: "9:16",
+      layouts: [
+        { scene_count: 9, grid_size: "grid_9", rows: 3, cols: 3, cell_count: 9, placeholder_count: 0, grid_aspect_ratio: "9:16" },
+        { scene_count: 3, grid_size: "grid_3", rows: 1, cols: 3, cell_count: 3, placeholder_count: 0, grid_aspect_ratio: "27:16" },
+      ],
     });
-
-    renderView(makeSegments(30));
-
-    await waitFor(() => expect(screen.getByText(/^4 批 · 30 格/)).toBeInTheDocument());
-    expect(screen.getByText(/3×3/)).toBeInTheDocument();
+    renderView(makeSegments(12));
+    expect(await screen.findByText("组 #1 · 12 个分镜 · 预计 2 张联合图")).toBeInTheDocument();
+    expect(screen.getByText(/^预计第 1 张：9 个分镜 · 3 行 × 3 列/)).toBeInTheDocument();
+    expect(screen.getByText(/^预计第 2 张：3 个分镜 · 1 行 × 3 列/)).toBeInTheDocument();
+    expect(screen.getByText(/^预计 2 张联合图 · 12 个分镜/)).toBeInTheDocument();
   });
-
-  it("能力请求失败时按保守上限展示，不虚报大宫格", async () => {
+  it("能力请求失败时说明尚无布局，不猜测行列和张数", async () => {
     vi.spyOn(API, "getGridCapability").mockRejectedValue(new Error("boom"));
+    renderView(makeSegments(12));
+    expect(await screen.findByText(/布局能力尚未加载/)).toBeInTheDocument();
+    expect(screen.queryByText(/3×3|3 行 × 3 列/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^预计 — 张联合图 · 12 个分镜/)).toBeInTheDocument();
+  });
 
-    renderView(makeSegments(30));
-
-    await waitFor(() => expect(screen.getByText(/3×3/)).toBeInTheDocument());
-    expect(screen.getByText(/^4 批 · 30 格/)).toBeInTheDocument();
+  it("项目视频比例改变后重新读取布局，不沿用竖屏模板", async () => {
+    const project = { title: "Demo", content_mode: "narration" as const, style: "", episodes: [], characters: {}, aspect_ratio: "9:16" };
+    useProjectsStore.setState({ currentProjectName: "demo", currentProjectData: project });
+    vi.spyOn(API, "getGridCapability")
+      .mockResolvedValueOnce({
+        large_grid_allowed: true, max_cell_count: 25, video_aspect_ratio: "9:16",
+        layouts: [{ scene_count: 12, grid_size: "grid_12", rows: 3, cols: 4, cell_count: 12, placeholder_count: 0, grid_aspect_ratio: "3:4" }],
+      })
+      .mockResolvedValueOnce({
+        large_grid_allowed: true, max_cell_count: 25, video_aspect_ratio: "16:9",
+        layouts: [{ scene_count: 12, grid_size: "grid_12", rows: 4, cols: 3, cell_count: 12, placeholder_count: 0, grid_aspect_ratio: "4:3" }],
+      });
+    renderView(makeSegments(12));
+    expect(await screen.findByText(/3 行 × 4 列.*首帧 9:16/)).toBeInTheDocument();
+    useProjectsStore.setState({ currentProjectData: { ...project, aspect_ratio: "16:9" } });
+    expect(await screen.findByText(/4 行 × 3 列.*首帧 16:9/)).toBeInTheDocument();
+    expect(screen.queryByText(/首帧 9:16/)).not.toBeInTheDocument();
   });
 });

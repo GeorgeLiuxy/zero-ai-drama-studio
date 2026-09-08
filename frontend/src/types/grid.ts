@@ -20,14 +20,43 @@ export interface FrameCell {
   image_path: string | null;
 }
 
-/**
- * 宫格档位能力。`max_cell_count` 是单张宫格的格数上限，前端据它镜像后端阶梯。
- * 注意 GridGeneration.grid_size 存的是历史记录写入时的档位字符串（含已停用的 grid_6），
- * 故保持宽松的 string 类型。
- */
+export interface GridLayoutPlan {
+  scene_count: number;
+  grid_size: string;
+  rows: number;
+  cols: number;
+  cell_count: number;
+  placeholder_count: number;
+  grid_aspect_ratio: string;
+}
+
+/** 布局表由后端按当前视频比例与生成能力计算，前端不自行选择模板。 */
 export interface GridCapability {
   large_grid_allowed: boolean;
   max_cell_count: number;
+  video_aspect_ratio: string;
+  layouts: GridLayoutPlan[];
+}
+
+export interface GridSplitPreview {
+  review_token: string;
+  valid: boolean;
+  issues: string[];
+  width: number;
+  height: number;
+  cell_width: number;
+  cell_height: number;
+  output_width: number;
+  output_height: number;
+  video_aspect_ratio: string;
+  cells: {
+    index: number;
+    row: number;
+    col: number;
+    scene_id: string | null;
+    placeholder: boolean;
+    image: string;
+  }[];
 }
 
 export interface GridGeneration {
@@ -46,6 +75,7 @@ export interface GridGeneration {
   provider: string;
   model: string;
   grid_size: string;
+  video_aspect_ratio?: string | null;
   created_at: string;
   error_message: string | null;
   reference_images?: ReferenceImage[] | null;

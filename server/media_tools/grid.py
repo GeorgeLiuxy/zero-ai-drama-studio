@@ -42,6 +42,7 @@ from lib.generation_result import (
 from lib.grid.layout import GridLayout, plan_grid_chunks, video_aspect_ratio_of
 from lib.grid.models import GridGeneration, build_grid_task_payload
 from lib.grid.prompt_builder import build_grid_prompt
+from lib.grid.review import GridSplitReviewError
 from lib.grid_manager import GridManager
 from lib.project_manager import grid_storyboard_enabled
 from lib.reference_admission import admit_storyboard_items
@@ -130,7 +131,7 @@ def _list_groups(
     groups containing those scenes (an empty one is rejected upstream, see
     ``normalize_requested_ids``).
 
-    ``allow_large_grid`` 与实际生成分支同源，非 4K 项目的预览里不会出现 4×4 / 5×5。
+    ``allow_large_grid`` 与实际生成分支同源，非 4K 项目的单张预览不会超过 9 格。
     分块与实际入队同源（``plan_grid_chunks``）：超上限分组展示的宫格张数与档位
     即实际生成的张数与档位。
     """
@@ -182,7 +183,7 @@ async def handle_generate_grid(
         if not grid_storyboard_enabled(project):
             return tool_problem("⚠️  项目未启用宫格分镜（grid_storyboard 未开启）")
 
-        # 4×4 / 5×5 只在图像分辨率档为 4K 时放行；预览与生成共用同一次判定
+        # 超过 9 格的单张布局仅在 4K 档放行；预览与生成共用同一次判定。
         allow_large_grid = await resolve_large_grid_allowed(project)
 
         if list_only:
@@ -457,6 +458,21 @@ async def handle_generate_grid(
                         )
                         for scene_id in report_ids
                     }
+                except GridSplitReviewError as exc:
+                    unit_results = {
+                        scene_id: {
+                            "problem": {
+                                "code": GenerationProblemCode.POST_PROCESSING_FAILED,
+                                "detail": (
+                                    "联合图已生成，需在多宫格预览中检查各格并确认切分后才能用于视频；"
+                                    "若提示布局不合格，请调整或重新生成该批次。"
+                                ),
+                                "action": GenerationAction.FIX_INPUT,
+                                "params": {"grid_id": grid.id, "reason": exc.key},
+                            }
+                        }
+                        for scene_id in report_ids
+                    }
                 except Exception:
                     logger.exception("联合图切分落格失败: grid_id=%s", grid.id)
                     unit_results = {
@@ -508,8 +524,8 @@ def generate_grid_tool(ctx: ToolContext, *, batch_waiter: GridBatchWaiter = batc
     @tool(
         _OPERATION,
         "为已开启宫格装配的 storyboard 项目（generation_mode=storyboard 且 grid_storyboard=true）"
-        "生成宫格联合图（按 segment_break 分组），并在每张生成完成后自动执行切分落格，"
-        "端到端产出各分镜的起始分镜图。"
+        "生成宫格联合图（按 segment_break 分组）；生成后需用户在多宫格预览中检查并确认切分，"
+        "通过检查后才会产出各分镜的起始分镜图。不要把待确认误当成生成失败而重复计费。"
         "list_only=true 时只列出分组不执行生成。scene_ids 过滤包含这些分镜的分组；"
         "不传 scene_ids 时只生成仍缺分镜图的分组，已失效但可用的旧图会被复用而不重生。"
         "结果按 requested / succeeded / failed / blocked 逐分镜 ID 返回"

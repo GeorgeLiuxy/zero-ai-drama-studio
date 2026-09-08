@@ -7,7 +7,7 @@ import {
   useActiveResourceIds,
   selectHasActiveTaskForScriptFile,
 } from "@/stores/tasks-store";
-import type { GridGeneration } from "@/types/grid";
+import type { GridGeneration, GridSplitPreview } from "@/types/grid";
 import type { TaskItem } from "@/types";
 import { GridPreviewPanel } from "./GridPreviewPanel";
 
@@ -47,6 +47,16 @@ function makeGrid(overrides: Partial<GridGeneration> = {}): GridGeneration {
     created_at: "2026-07-16T00:00:00Z",
     error_message: null,
     split_at: "2026-07-16T00:10:00Z",
+    ...overrides,
+  };
+}
+
+function makeSplitPreview(overrides: Partial<GridSplitPreview> = {}): GridSplitPreview {
+  return {
+    review_token: "source-review-1", valid: true, issues: [],
+    width: 1152, height: 2048, cell_width: 576, cell_height: 1024,
+    output_width: 576, output_height: 1024, video_aspect_ratio: "9:16",
+    cells: [{ index: 0, row: 0, col: 0, scene_id: "SCN-1", placeholder: false, image: "data:image/png;base64,AA==" }],
     ...overrides,
   };
 }
@@ -155,6 +165,9 @@ describe("GridPreviewPanel occupancy", () => {
 });
 
 describe("GridPreviewPanel split", () => {
+  beforeEach(() => {
+    vi.spyOn(API, "getGridSplitPreview").mockResolvedValue(makeSplitPreview());
+  });
   it("切分成功后应用指纹、更新 split_at 并弹成功提示；跳过的分镜另弹警示", async () => {
     vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
     const { useProjectsStore } = await import("@/stores/projects-store");
@@ -168,11 +181,14 @@ describe("GridPreviewPanel split", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const splitBtn = await screen.findByText("切分落格");
+    const splitBtn = await screen.findByText("预览切分");
     fireEvent.click(splitBtn);
+    expect(await screen.findByRole("img", { name: "第 1 格 · SCN-1" })).toHaveAttribute("src", "data:image/png;base64,AA==");
+    expect(API.splitGrid).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("已逐格确认，写入首帧"));
 
     await waitFor(() => {
-      expect(API.splitGrid).toHaveBeenCalledWith("demo", "grid-1");
+      expect(API.splitGrid).toHaveBeenCalledWith("demo", "grid-1", "source-review-1");
       expect(useProjectsStore.getState().assetFingerprints["storyboards/scene_SCN-1.png"]).toBe(42);
       // 单槽 toast：有跳过分镜时警示后发、留在最终态
       expect(useAppStore.getState().toast?.text).toContain("SCN-9");
@@ -192,7 +208,8 @@ describe("GridPreviewPanel split", () => {
     });
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    fireEvent.click(await screen.findByText("切分落格"));
+    fireEvent.click(await screen.findByText("预览切分"));
+    fireEvent.click(await screen.findByText("已逐格确认，写入首帧"));
 
     await waitFor(() => {
       expect(useAppStore.getState().toast?.text).toContain("已切分 2 格");
@@ -211,8 +228,39 @@ describe("GridPreviewPanel split", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const splitBtn = (await screen.findByText("切分落格")).closest("button");
+    const splitBtn = (await screen.findByText("预览切分")).closest("button");
     expect(splitBtn?.disabled).toBe(true);
+  });
+
+  it("尺寸或分割检查失败时保留真实切片预览并阻止写入", async () => {
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.mocked(API.getGridSplitPreview).mockResolvedValue(makeSplitPreview({ valid: false, issues: ["unexpected_horizontal_separator"] }));
+    const split = vi.spyOn(API, "splitGrid");
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
+    fireEvent.click(await screen.findByText("预览切分"));
+    expect(await screen.findByText("已逐格确认，写入首帧")).toBeDisabled();
+    expect(screen.getByText(/检测到偏离等分边界的横向分割线/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "第 1 格 · SCN-1" })).toBeInTheDocument();
+    expect(split).not.toHaveBeenCalled();
+  });
+
+  it("原图更新后移除旧预览，重新预览才可确认", async () => {
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
+    fireEvent.click(await screen.findByText("预览切分"));
+    expect(await screen.findByText("已逐格确认，写入首帧")).toBeEnabled();
+    useAppStore.getState().invalidateGrids();
+    await waitFor(() => expect(screen.queryByText("已逐格确认，写入首帧")).not.toBeInTheDocument());
+    expect(screen.getByText("预览切分")).toBeEnabled();
+  });
+
+  it("低像素单格明确提示放大不能补回细节，并展示统一输出比例", async () => {
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid());
+    vi.mocked(API.getGridSplitPreview).mockResolvedValue(makeSplitPreview({ cell_width: 288, cell_height: 512 }));
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
+    fireEvent.click(await screen.findByText("预览切分"));
+    expect(await screen.findByText(/放大不能补回细节/)).toBeInTheDocument();
+    expect(screen.getByText(/统一首帧 576×1024（9:16）/)).toBeInTheDocument();
   });
 });
 

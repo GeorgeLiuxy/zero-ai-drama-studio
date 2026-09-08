@@ -122,7 +122,7 @@ Agent session 的当前工作目录（cwd）已绑定到当前项目根，**所�
 | generate-script | — | 调用项目配置的文本模型生成 JSON 剧本（由子智能体调用） |
 | generate-assets | `/generate-assets` | 统一资产生成：可指定 `type=character\|scene\|prop`，省略则三类并行 |
 | generate-storyboard | `/generate-storyboard` | 生成分镜图（分镜图生视频） |
-| generate-grid | `/generate-grid` | 生成宫格分镜图（`grid_storyboard=true` 时：按 segment_break 分组的链式宫格） |
+| generate-grid | `/generate-grid` | 生成宫格分镜图（`grid_storyboard=true` 时：按分镜数量与视频比例规划等大首帧，预览确认后切分落格） |
 | generate-video | `/generate-video` | 生成视频 |
 | compose-video | `/compose-video` | 单集片段串接 + 可选 BGM（仅 drama，ffmpeg） |
 

@@ -79,7 +79,7 @@ async def test_generate_grid_list_only(fake_ctx: ToolContext) -> None:
 
 @pytest.mark.parametrize(
     ("allow_large_grid", "expected", "forbidden"),
-    [(True, "grid_16 (4×4)", "grid_9"), (False, "grid_9 (3×3)", "grid_16")],
+    [(True, "grid_12 (4×3)", "grid_9"), (False, "grid_9 (3×3)", "grid_12")],
 )
 async def test_generate_grid_list_only_respects_4k_gate(
     fake_ctx: ToolContext,
@@ -88,7 +88,7 @@ async def test_generate_grid_list_only_respects_4k_gate(
     expected: str,
     forbidden: str,
 ) -> None:
-    # 非 4K 时 4×4 / 5×5 不出现在面向 Agent 的分组预览里
+    # 非 4K 时容量封顶九格，4K 可使用恰好容纳十二张横屏首帧的矩形布局。
     fake_ctx.pm.project_payload["generation_mode"] = "storyboard"
     fake_ctx.pm.project_payload["grid_storyboard"] = True
     fake_ctx.pm.script_payload["segments"] = [
@@ -125,13 +125,13 @@ async def test_generate_grid_list_only_shows_split_for_oversized_group(
     out = await call(tool_obj, {"script": "episode_1.json", "list_only": True})
     assert out.get("is_error") is not True
     text = out["content"][0]["text"]
-    assert "2 张宫格: grid_9 (3×3) + grid_4 (2×2)" in text
+    assert "2 张宫格: grid_9 (3×3) + grid_3 (3×1)" in text
 
 
 async def test_generate_grid_falls_back_on_null_aspect_ratio(
     fake_ctx: ToolContext, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # project.json 允许把 aspect_ratio 显式写为 null；SDK 入队路径须回退到默认比例，
+    # project.json 允许把 aspect_ratio 显式写为 null；SDK 入队须沿用 drama 视频的默认比例，
     # 否则 None 会写进宫格规划、任务 payload 与记录上冻结的比例
     from lib.grid_manager import GridManager
 
@@ -169,8 +169,8 @@ async def test_generate_grid_falls_back_on_null_aspect_ratio(
     out = await call(tool_obj, {"script": "episode_1.json"})
     assert out.get("is_error") is not True
 
-    assert [p["video_aspect_ratio"] for p in payloads] == ["9:16"]
-    assert [g.video_aspect_ratio for g in GridManager(fake_ctx.project_path).list_all()] == ["9:16"]
+    assert [p["video_aspect_ratio"] for p in payloads] == ["16:9"]
+    assert [g.video_aspect_ratio for g in GridManager(fake_ctx.project_path).list_all()] == ["16:9"]
 
 
 async def test_generate_grid_split_failure_keeps_the_paid_image_and_fails_the_id(
@@ -733,16 +733,16 @@ async def test_generate_grid_splits_oversized_group_into_multiple_grids(
     # 每张生成成功的宫格都被显式切分
     assert len(split_calls) == 2
 
-    assert [(len(p["scene_ids"]), p["grid_size"]) for p in payloads] == [(9, "grid_9"), (3, "grid_4")]
+    assert [(len(p["scene_ids"]), p["grid_size"]) for p in payloads] == [(9, "grid_9"), (3, "grid_3")]
     # 场景不重不漏且保持顺序
     assert [sid for p in payloads for sid in p["scene_ids"]] == all_ids
     # 每张的 prompt 按自身块与档位构建
     assert "3×3" in payloads[0]["prompt"]
-    assert "2×2" in payloads[1]["prompt"]
+    assert "3×1" in payloads[1]["prompt"]
 
     # 落盘的 grid 记录与 payload 一致，帧链长度等于格数
     grids = sorted(GridManager(fake_ctx.project_path).list_all(), key=lambda g: len(g.scene_ids), reverse=True)
-    assert [(g.scene_ids, g.rows, g.cols) for g in grids] == [(all_ids[:9], 3, 3), (all_ids[9:], 2, 2)]
+    assert [(g.scene_ids, g.rows, g.cols) for g in grids] == [(all_ids[:9], 3, 3), (all_ids[9:], 3, 1)]
     assert all(len(g.frame_chain) == g.rows * g.cols for g in grids)
 
 

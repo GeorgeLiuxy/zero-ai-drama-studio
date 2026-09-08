@@ -82,7 +82,7 @@ import type {
   VideoCapabilities,
 } from "@/types";
 import type { GenerationRoute } from "@/utils/generation-mode";
-import type { GridCapability, GridGeneration } from "@/types/grid";
+import type { GridCapability, GridGeneration, GridSplitPreview } from "@/types/grid";
 import type {
   PresentationReadModel,
   PresentationRequestOptions,
@@ -3214,7 +3214,7 @@ class API {
   }
 
   /**
-   * 获取项目的宫格档位能力（4×4/5×5 是否可用、单张格数上限）
+   * 获取项目的视频比例、单张格数上限与后端布局表
    * @param projectName - 项目名称
    */
   static async getGridCapability(
@@ -3250,14 +3250,21 @@ class API {
     );
   }
 
+  static async getGridSplitPreview(projectName: string, gridId: string): Promise<GridSplitPreview> {
+    return this.request(
+      `/projects/${encodeURIComponent(projectName)}/grids/${encodeURIComponent(gridId)}/split-preview`,
+    );
+  }
+
   /**
-   * 切分落格：按当前联合图覆写各分镜格（唯一覆写分镜格的操作，同步执行）
+   * 确认已审核的当前联合图切片后覆写各分镜格，同步执行
    * @param projectName - 项目名称
    * @param gridId - Grid ID
    */
   static async splitGrid(
     projectName: string,
-    gridId: string
+    gridId: string,
+    reviewToken: string,
   ): Promise<{
     success: boolean;
     split_at: string | null;
@@ -3267,7 +3274,7 @@ class API {
   }> {
     return this.request(
       `/projects/${encodeURIComponent(projectName)}/grids/${encodeURIComponent(gridId)}/split`,
-      { method: "POST" }
+      { method: "POST", body: JSON.stringify({ review_token: reviewToken }) }
     );
   }
 

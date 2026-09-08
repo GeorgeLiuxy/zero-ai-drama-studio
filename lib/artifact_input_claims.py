@@ -29,7 +29,9 @@ from lib.artifact_manifest import (
 )
 from lib.artifact_planner import normalize_script_binding
 from lib.formal_write import project_metadata_lock
+from lib.grid.review import require_reviewed_grid_first_frame
 from lib.storyboard_sequence import StoryboardImageUnavailable, resolve_storyboard_video_inputs
+from lib.video_visual_provenance import resolve_video_aspect_ratio
 from lib.visual_artifact_provenance import (
     VisualReference,
 )
@@ -318,4 +320,5 @@ def resolve_usable_storyboard_video_inputs(
         claims=claims,
     ):
         raise StoryboardImageUnavailable(f"storyboard is not registered: {storyboard_rel}")
+    require_reviewed_grid_first_frame(project_path, resource_id, storyboard_file, resolve_video_aspect_ratio(project))
     return storyboard_file, end_frame

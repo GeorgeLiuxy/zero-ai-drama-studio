@@ -1,6 +1,6 @@
 """T2I 槽图像分辨率解析，及其上的宫格档位门控。
 
-4×4 / 5×5 档只在图像分辨率档为 4K 时放行（见 ``lib.grid.layout.large_grid_allowed``）。
+超过 9 格的单张布局仅在图像分辨率档为 4K 时放行（见 ``lib.grid.layout.large_grid_allowed``）。
 判定必须与实际入队、费用估算共用同一份解析，否则前端预览、估价与真正生成的宫格张数会漂移，
 故三条路径都经本模块取档；同一次解析还是费用估算里两路分镜图（宫格 / 普通）的计价档来源。
 """
@@ -25,7 +25,7 @@ async def resolve_image_resolution(r: ConfigResolver, project: dict) -> str | No
     不同档位。
 
     解析失败（未配置图像供应商等）按未配置处理：门控是收紧方向，取不到档位即不放行大宫格。
-    这条降级会让已配置 4K 的项目静默退回 3×3，故留一条 warning 便于排查。
+    解析失败时单张容量退回 9 格，故留一条 warning 便于排查。
     """
     try:
         resolved = await r.resolve_image_backend(project, None, capability="t2i")

@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from math import gcd
 
+from lib.grid.layout import grid_aspect_ratio_for
+
 
 def project_grid_image_prompt(image_prompt: object) -> str | dict[str, object]:
     """Project grid image semantics into the canonical provider/basis shape."""
@@ -55,23 +57,14 @@ def _extract_image_desc(scene: dict) -> str:
     return "；".join(parts) if parts else ""
 
 
-def _extract_action(scene: dict) -> str:
-    """Extract closing action from video_prompt.
-
-    If dict, return action field. If string, return as-is.
-    """
-    video_prompt = scene.get("video_prompt", "")
-    if isinstance(video_prompt, dict):
-        return str(video_prompt.get("action", ""))
-    return str(video_prompt)
-
-
 def _compute_panel_aspect(grid_aspect_ratio: str, rows: int, cols: int) -> str:
     """从整体宫格比例推算单格比例。
 
     例：grid 4:3, 3行2列 → panel (4/2):(3/3) = 2:1
     """
-    gw, gh = (int(x) for x in grid_aspect_ratio.split(":"))
+    gw, gh = (int(x) for x in grid_aspect_ratio_for(1, 1, grid_aspect_ratio).split(":"))
+    if rows <= 0 or cols <= 0:
+        raise ValueError("宫格行数和列数必须为正整数")
     pw = gw * rows  # 交叉相乘避免浮点
     ph = gh * cols
     g = gcd(pw, ph)
@@ -89,7 +82,7 @@ def build_grid_prompt(
     grid_aspect_ratio: str | None = None,
     reference_image_mapping: dict[str, str] | None = None,
 ) -> str:
-    """Assemble a grid image generation prompt with first-last frame chain structure.
+    """Assemble one static first-frame image per scene in a fixed equal-cell grid.
 
     Args:
         scenes: List of scene dicts with image_prompt and video_prompt fields.
@@ -103,22 +96,19 @@ def build_grid_prompt(
     Returns:
         Assembled prompt string.
     """
+    effective_grid_ar = grid_aspect_ratio_for(rows, cols, aspect_ratio)
+    if grid_aspect_ratio is not None and grid_aspect_ratio_for(1, 1, grid_aspect_ratio) != effective_grid_ar:
+        raise ValueError(
+            f"宫格整体比例 {grid_aspect_ratio} 与 {rows} 行 {cols} 列、单格比例 {aspect_ratio} 不一致，"
+            f"整体比例应为 {effective_grid_ar}"
+        )
+    panel_ar = _compute_panel_aspect(effective_grid_ar, rows, cols)
     total = rows * cols
     n_scenes = len(scenes)
     if n_scenes > total:
         # 超员场景在成图中没有对应画格，切格回填会按位置错配——调用方应先按
         # max_cell_count 切块（见 lib.grid.layout.plan_grid_chunks），此处 fail loud。
         raise ValueError(f"分镜数 {n_scenes} 超过 {rows}×{cols} 宫格的画格数 {total}，分组应先切块再构建 prompt")
-
-    # Number of content cells: first frame + (n_scenes - 1) transitions + last first frame
-    # Cell 0: first scene opening
-    # Cells 1..n_scenes-2: transitions between consecutive scenes
-    # Cell n_scenes-1: last scene opening
-    # Remaining cells: placeholders
-    n_content = n_scenes  # 1 first + (n-2) transitions + 1 last = n
-
-    effective_grid_ar = grid_aspect_ratio or aspect_ratio
-    panel_ar = _compute_panel_aspect(effective_grid_ar, rows, cols)
 
     lines: list[str] = []
 
@@ -133,17 +123,17 @@ def build_grid_prompt(
     lines.append(f"- 恰好 {rows} 行 {cols} 列，共 {total} 个画格，阅读顺序：从左到右，从上到下")
     lines.append(f"- 整体图片比例：{effective_grid_ar}")
     lines.append(f"- 每个画格比例：{panel_ar}，所有画格大小完全相同")
+    lines.append(f"- 所有行严格等高，所有列严格等宽：每格宽为整图宽的 1/{cols}，高为整图高的 1/{rows}")
     lines.append("- 画格之间无边框、无间隙、无留白，紧密排列")
     lines.append("- 不得合并画格、不得遗漏画格、不得错位排列")
     lines.append("- 所有画格保持一致的角色外观、光线和色彩风格")
     lines.append("")
 
-    # Frame chain rhythm
-    lines.append("【帧链节奏】")
-    lines.append("本宫格采用首尾帧链式结构：")
-    lines.append("- 格0 是第一个场景的开场画面")
-    lines.append(f"- 格1~格{n_content - 1} 是相邻场景的过渡帧（前一场景的结束 = 后一场景的开始）")
-    lines.append("- 相邻格之间应体现画面的自然过渡和动作延续")
+    # Each destination scene receives one complete video first frame.
+    lines.append("【首帧要求】")
+    lines.append("- 每个内容格仅绘制对应分镜开始时的一张完整静态画面，用作该分镜的视频首帧")
+    lines.append("- 每格只有一个镜头和一个时间点，不在同一格内展示动作过程、前后对比或多个场景")
+    lines.append("- 相邻格保持角色和场景的一致性，每个镜头的构图分别完整地容纳在自己的画格内")
     lines.append("")
 
     # Reference images (optional)
@@ -161,24 +151,12 @@ def build_grid_prompt(
         col_num = cell_idx % cols + 1
         position = f"row{row_num} col{col_num}"
 
-        if cell_idx == 0:
-            # First scene opening
-            scene = scenes[0]
+        if cell_idx < n_scenes:
+            scene = scenes[cell_idx]
             scene_id = scene.get(id_field, "")
             image_desc = _extract_image_desc(scene)
-            lines.append(f"格{cell_idx}（{position}）— {scene_id}开场：")
+            lines.append(f"格{cell_idx}（{position}）— {scene_id}首帧：")
             lines.append(f"  {image_desc}")
-
-        elif cell_idx < n_scenes:
-            # Transition between scenes[cell_idx-1] and scenes[cell_idx]
-            prev_scene = scenes[cell_idx - 1]
-            next_scene = scenes[cell_idx]
-            prev_scene_id = prev_scene.get(id_field, "")
-            next_scene_id = next_scene.get(id_field, "")
-            prev_action = _extract_action(prev_scene)
-            next_image_desc = _extract_image_desc(next_scene)
-            lines.append(f"格{cell_idx}（{position}）— {prev_scene_id}→{next_scene_id}过渡：")
-            lines.append(f"  {prev_action}，过渡到 {next_image_desc}")
 
         else:
             # Placeholder
@@ -200,7 +178,7 @@ def build_grid_prompt(
     lines.append("- 分隔线、间隙、间距、留白、padding、margin")
     lines.append("- 白色背景、纯色背景条")
     lines.append("- 合并的画格、缺失的画格、错位的画格")
-    lines.append("- 连续全景图（非分格）、单张大图")
+    lines.append("- 跨格的连续全景图、单格内再次分屏、画中画、同格多镜头或多个时间点")
     lines.append("- 模糊、低画质、噪点")
     lines.append("- 拼贴感、蒙太奇拼接感")
     lines.append("- 画格大小不一致、画格比例不一致")

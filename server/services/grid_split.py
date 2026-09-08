@@ -27,6 +27,14 @@ from lib.artifact_manifest import (
 from lib.artifact_version_provenance import IMAGE_ARTIFACT_BASIS_FIELD
 from lib.async_thread import run_noninterruptible_sync
 from lib.grid.models import GridGeneration
+from lib.grid.review import (
+    GRID_REVIEW_VERSION,
+    GridSplitReviewError,
+    build_grid_split_preview,
+    first_frame_size,
+    grid_review_token,
+    inspect_grid_source,
+)
 from lib.grid_manager import GridManager
 from lib.path_safety import safe_join
 from lib.project_manager import get_project_manager
@@ -58,6 +66,23 @@ def _register_split_entries_atomically(
 
 class GridImageNotReadyError(Exception):
     """宫格尚无联合图（未生成完成且未上传），无法切分。"""
+
+
+async def preview_grid_split(project_name: str, grid: GridGeneration) -> dict[str, Any]:
+    """Read the composite and produce review crops without assigning storyboards."""
+    from lib.grid.layout import video_aspect_ratio_of
+
+    pm = get_project_manager()
+
+    def _read() -> dict[str, Any]:
+        project_path = pm.get_project_path(project_name)
+        image_file = GridManager(project_path).image_path(grid.id)
+        if not grid.grid_image_path or not image_file.exists():
+            raise GridImageNotReadyError(f"grid {grid.id} has no grid image to preview")
+        project = pm.load_project(project_name)
+        return build_grid_split_preview(image_file.read_bytes(), grid, video_aspect_ratio_of(project))
+
+    return await asyncio.to_thread(_read)
 
 
 @dataclass
@@ -146,6 +171,7 @@ async def apply_grid_split(
     only_scene_ids: frozenset[str] | None = None,
     register_entries: Callable[..., None] | None = None,
     task_aware: bool = False,
+    review_token: str | None = None,
 ) -> GridSplitResult:
     """按 ``grid`` 当前联合图切割并覆写各分镜格。
 
@@ -204,7 +230,9 @@ async def apply_grid_split(
 
         # 比例取记录冻结值：项目 aspect_ratio 改过之后再切历史联合图，按新比例中心裁切
         # 会把每格削掉大半（横版图按竖版切）。存量记录无该字段，回退到项目当前设置。
-        video_aspect_ratio = grid.video_aspect_ratio or get_aspect_ratio(project_snapshot, "videos")
+        project_aspect_ratio = get_aspect_ratio(project_snapshot, "videos")
+        video_aspect_ratio = grid.video_aspect_ratio or project_aspect_ratio
+        output_size = first_frame_size(project_aspect_ratio)
 
         def _snapshot_and_split() -> tuple[Path, list[Any]]:
             fd, snapshot_name = tempfile.mkstemp(
@@ -220,7 +248,15 @@ async def apply_grid_split(
                 # 切格与建 basis；上传/还原可在随后替换 canonical PNG，不会混入半新半旧证据。
                 with Image.open(snapshot) as src:
                     src.load()
-                    return snapshot, split_grid_image(src, grid.rows, grid.cols, video_aspect_ratio)
+                    report = inspect_grid_source(src, grid, project_aspect_ratio)
+                    if not report["valid"]:
+                        raise GridSplitReviewError("grid_geometry_invalid").with_diagnostic(report["issues"])
+                    expected_token = grid_review_token(snapshot.read_bytes(), grid, project_aspect_ratio)
+                    if not review_token or review_token != expected_token:
+                        raise GridSplitReviewError("grid_split_review_required")
+                    return snapshot, split_grid_image(
+                        src, grid.rows, grid.cols, video_aspect_ratio, output_size=output_size
+                    )
             except BaseException:
                 snapshot.unlink(missing_ok=True)
                 raise
@@ -275,7 +311,14 @@ async def apply_grid_split(
                 os.close(fd)
                 staged_path.unlink()
                 cell.save(staged_path, format="PNG")
-                version_metadata = {"source": "grid_split", "grid_id": grid.id}
+                version_metadata = {
+                    "source": "grid_split",
+                    "grid_id": grid.id,
+                    "grid_review_version": GRID_REVIEW_VERSION,
+                    "grid_review_token": review_token,
+                    "first_frame_aspect_ratio": video_aspect_ratio,
+                    "first_frame_size": list(output_size),
+                }
                 version_metadata_by_resource[resource_id] = version_metadata
                 staged_commits.append(
                     StagedVersionCommit(
@@ -336,6 +379,8 @@ async def apply_grid_split(
                 """Refresh the registered grid source and derived bases inside the final transaction."""
 
                 nonlocal source_entry, source_key, source_status
+                if get_aspect_ratio(current_project, "videos") != project_aspect_ratio:
+                    raise GridSplitReviewError("grid_split_review_required")
                 source_key, source_entry, source_status = _registered_grid_source()
 
                 current_items, current_id_field, _kind = resolve_items(current_script)

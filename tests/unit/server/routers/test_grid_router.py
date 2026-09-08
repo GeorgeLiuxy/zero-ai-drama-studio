@@ -30,6 +30,10 @@ class TestGridRouterExists:
         paths = [r.path for r in router.routes]
         assert any(p.endswith("/grids/{grid_id}/split") for p in paths)
 
+    def test_router_has_split_preview_endpoint(self):
+        paths = [r.path for r in router.routes]
+        assert any(p.endswith("/grids/{grid_id}/split-preview") for p in paths)
+
     def test_router_has_upload_endpoint(self):
         paths = [r.path for r in router.routes]
         assert any(p.endswith("/grids/{grid_id}/upload") for p in paths)

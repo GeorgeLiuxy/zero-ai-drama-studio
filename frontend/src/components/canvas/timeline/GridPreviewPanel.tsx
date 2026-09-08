@@ -22,7 +22,8 @@ import { useProjectsStore } from "@/stores/projects-store";
 import { useAppStore } from "@/stores/app-store";
 import { isResourceBusy, useActiveResourceIds } from "@/stores/tasks-store";
 import { VersionTimeMachine } from "@/components/canvas/timeline/VersionTimeMachine";
-import type { GridGeneration, ReferenceImage } from "@/types/grid";
+import { GridSplitReview } from "@/components/canvas/timeline/GridSplitReview";
+import type { GridGeneration, GridSplitPreview, ReferenceImage } from "@/types/grid";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -168,6 +169,14 @@ export function GridPreviewPanel({
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [splitting, setSplitting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [splitReview, setSplitReview] = useState<{
+    project: string;
+    gridId: string;
+    revision: number;
+    fingerprint: number | null;
+    preview: GridSplitPreview;
+  } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -205,6 +214,7 @@ export function GridPreviewPanel({
       .then((data) => {
         if (!cancelled) {
           setGrid(data);
+          setSplitReview(null);
           setLoading(false);
         }
       })
@@ -227,21 +237,22 @@ export function GridPreviewPanel({
   const isInProgress = selectedGridId != null && activeGridIds.has(selectedGridId);
   // 面板动作（重生成/切分/上传/版本恢复）互斥：都写同一份联合图或分镜格，
   // 任一在途时兄弟控件同步禁用。
-  const actionBusy = regenerating || splitting || uploading || restoring || isInProgress;
+  const actionBusy = regenerating || splitting || previewing || uploading || restoring || isInProgress;
 
   // 提交时刻的占用新鲜读：渲染快照（isInProgress）之外复核 tasks store 最新状态
   const freshBusy = () =>
     selectedGridId != null && isResourceBusy("grid", projectName, selectedGridId);
 
   const handleSplit = () => {
-    if (!grid || !selectedGridId || actionBusy) return;
+    if (!grid || !selectedGridId || !currentReview?.valid || actionBusy) return;
     if (freshBusy()) {
       useAppStore.getState().pushToast(t("grid_regenerate_busy"), "error");
       return;
     }
     setSplitting(true);
-    API.splitGrid(projectName, selectedGridId)
+    API.splitGrid(projectName, selectedGridId, currentReview.review_token)
       .then((res) => {
+        setSplitReview(null);
         useProjectsStore.getState().updateAssetFingerprints(res.asset_fingerprints);
         // 只回写发起切分的那个宫格：批次切换不受动作禁用限制，请求在途时用户可能已切到
         // 别的宫格，无条件回写会把该请求的 split_at 记到另一个宫格上。
@@ -256,6 +267,7 @@ export function GridPreviewPanel({
         }
       })
       .catch((err: unknown) => {
+        setSplitReview(null);
         // 瞬态失败走 toast，不用 setError 毁掉整个面板视图
         useAppStore.getState().pushToast(t("grid_split_failed", { message: errMsg(err) }), "error");
       })
@@ -269,6 +281,7 @@ export function GridPreviewPanel({
       return;
     }
     setUploading(true);
+    setSplitReview(null);
     API.uploadGridImage(projectName, selectedGridId, file)
       .then((res) => {
         useProjectsStore.getState().updateAssetFingerprints(res.asset_fingerprints);
@@ -287,6 +300,29 @@ export function GridPreviewPanel({
   const gridFp = useProjectsStore((s) =>
     grid?.grid_image_path ? (s.assetFingerprints[grid.grid_image_path] ?? null) : null,
   );
+  const currentReview = splitReview?.project === projectName
+    && splitReview.gridId === selectedGridId
+    && splitReview.revision === gridsRevision
+    && splitReview.fingerprint === gridFp
+    ? splitReview.preview : null;
+
+  const handlePreviewSplit = () => {
+    if (!selectedGridId || actionBusy) return;
+    if (freshBusy()) {
+      useAppStore.getState().pushToast(t("grid_regenerate_busy"), "error");
+      return;
+    }
+    setPreviewing(true);
+    setSplitReview(null);
+    API.getGridSplitPreview(projectName, selectedGridId)
+      .then((preview) => {
+        setSplitReview({ project: projectName, gridId: selectedGridId, revision: gridsRevision, fingerprint: gridFp, preview });
+      })
+      .catch((err: unknown) => {
+        useAppStore.getState().pushToast(t("grid_split_failed", { message: errMsg(err) }), "error");
+      })
+      .finally(() => setPreviewing(false));
+  };
   const imageUrl =
     grid?.grid_image_path
       ? API.getFileUrl(projectName, grid.grid_image_path, gridFp ?? refreshKey)
@@ -414,7 +450,10 @@ export function GridPreviewPanel({
                           iconOnly
                           busy={actionBusy}
                           checkBusy={freshBusy}
-                          onRestoringChange={setRestoring}
+                          onRestoringChange={(value) => {
+                            setRestoring(value);
+                            if (value) setSplitReview(null);
+                          }}
                           onRestore={() => {
                             // 还原换回历史联合图并复位切分态，重拉记录同步 split_at
                             useAppStore.getState().invalidateGrids();
@@ -453,7 +492,7 @@ export function GridPreviewPanel({
                       <motion.button
                         type="button"
                         disabled={actionBusy || !grid.grid_image_path}
-                        onClick={handleSplit}
+                        onClick={handlePreviewSplit}
                         className={`shrink-0 whitespace-nowrap inline-flex items-center gap-1 rounded border border-amber-800/30 bg-amber-950/30 px-2 py-1 text-[10px] font-medium text-amber-400/80 transition-colors ${
                           actionBusy || !grid.grid_image_path
                             ? "opacity-50 cursor-not-allowed"
@@ -461,12 +500,12 @@ export function GridPreviewPanel({
                         }`}
                         whileTap={actionBusy || !grid.grid_image_path ? {} : { scale: 0.95 }}
                       >
-                        {splitting ? (
+                        {splitting || previewing ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Scissors className="h-3 w-3" />
                         )}
-                        {splitting ? t("grid_splitting") : t("grid_split_btn")}
+                        {splitting ? t("grid_splitting") : previewing ? t("grid_review_loading") : t("grid_split_btn")}
                       </motion.button>
 
                       <motion.button
@@ -484,6 +523,7 @@ export function GridPreviewPanel({
                             return;
                           }
                           setRegenerating(true);
+                          setSplitReview(null);
                           enqueueGridRegenerate(projectName, selectedGridId, grid?.script_file ?? null)
                             .then(() => {
                               setGrid((prev) => prev ? { ...prev, status: "pending" } : prev);
@@ -515,10 +555,10 @@ export function GridPreviewPanel({
                       />
                       <div className="flex items-center gap-2 border-t border-gray-800/50 px-2.5 py-1.5">
                         <span className="font-mono text-[10px] text-gray-500">
-                          {t("grid_cell_info", { count: grid.cell_count, size: grid.grid_size })}
+                          {t("grid_frozen_layout", { scenes: grid.scene_ids.length, rows: grid.rows, cols: grid.cols, placeholders: grid.cell_count - grid.scene_ids.length })}
                         </span>
                         <span className="text-[10px] text-gray-700">
-                          {grid.rows}×{grid.cols}
+                          {grid.video_aspect_ratio && t("grid_first_frame_ratio", { ratio: grid.video_aspect_ratio })}
                         </span>
                       </div>
                     </div>
@@ -531,6 +571,8 @@ export function GridPreviewPanel({
                       </span>
                     </div>
                   )}
+
+                  {currentReview && <GridSplitReview preview={currentReview} busy={actionBusy} onConfirm={handleSplit} onCancel={() => setSplitReview(null)} />}
 
                   {/* Reference images strip */}
                   {refs.length > 0 && (

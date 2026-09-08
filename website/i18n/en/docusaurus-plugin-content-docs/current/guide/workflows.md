@@ -217,9 +217,11 @@ Uses a single storyboard image as the video input.
 
 ### 4.2 Multi-grid Storyboards Within Storyboard Mode {#grid-storyboard-route}
 
-Multi-grid storyboards are not a separate generation mode but an image-generation method within Storyboard mode. It generates multiple shots from the same passage together on one or more multi-grid storyboards, then automatically splits each grid into an individual storyboard image for each shot and generates each video separately. The video model still receives the individual storyboard image after splitting.
+Multi-grid storyboards are an image-generation method within Storyboard mode. The first frames of several shots are generated together in one or more composite images. Review the actual crops and confirm them before they are assigned to shots for video generation. The video model receives an individual first frame, not the composite.
 
-Multi-grid storyboards automatically use square 2×2 / 3×3 grids based on the number of shots. Each cell uses the same aspect ratio as the project video; when there are more shots, they are divided across multiple multi-grid storyboards according to the grid capacity. Denser 4×4 / 5×5 grids are available only when the image model's resolution tier is configured as 4K—the more cells a multi-grid storyboard contains, the lower the resolution of each cell, and dense grids at lower resolution tiers will degrade downstream video quality.
+Rows and columns depend on the shot count and project video ratio, with identical proportions for every cell. The composite ratio is “columns × cell width : rows × cell height.” A standard tier allows up to 9 cells per image, and 4K allows up to 25; larger groups are split across images. These are capacity limits, not mandatory square templates. When capacity permits, 12 portrait 9:16 frames use 3 rows and 4 columns on a 3:4 canvas; landscape 16:9 frames use 4 rows and 3 columns on a 4:3 canvas.
+
+Models do not guarantee exact layouts. The crop preview shows each actual crop, source cell pixels, and output dimensions; obvious ratio errors or separator lines prevent assignment. Even when automatic checks pass, verify that every crop contains one complete scene. Regeneration, uploads, version restoration, or project ratio changes require a new preview. First frames use a common exact-ratio input size (576×1024 for 9:16; 1024×576 for 16:9). Upscaling a small source does not add detail; reduce the number of cells per image or regenerate a sharper composite.
 
 #### Advantages {#grid-storyboard-pros}
 

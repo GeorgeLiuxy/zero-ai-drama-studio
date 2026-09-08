@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeGridSize, matchGridsForGroup } from "./grid-layout";
+import type { GridCapability } from "@/types/grid";
+import { planGridChunks, matchGridsForGroup } from "./grid-layout";
 
 interface FakeGrid {
   id: string;
@@ -17,56 +18,23 @@ function grid(
   return { id, episode, scene_ids, created_at };
 }
 
-// 阶梯必须与后端 lib/grid/layout.py 一致,否则批次预览数与实际入队张数会漂移
-describe("computeGridSize", () => {
-  it.each([
-    [1, "grid_4", 2],
-    [4, "grid_4", 2],
-    [5, "grid_9", 3],
-    [6, "grid_9", 3],
-    [9, "grid_9", 3],
-  ])("picks a square layout for %i scenes", (count, gridSize, side) => {
-    const layout = computeGridSize(count);
-    expect(layout.gridSize).toBe(gridSize);
-    expect([layout.rows, layout.cols]).toEqual([side, side]);
-    expect(layout.cellCount).toBe(side * side);
+describe("planGridChunks", () => {
+  const capability: GridCapability = {
+    large_grid_allowed: false, max_cell_count: 9, video_aspect_ratio: "9:16",
+    layouts: [
+      { scene_count: 9, grid_size: "grid_9", rows: 3, cols: 3, cell_count: 9, placeholder_count: 0, grid_aspect_ratio: "9:16" },
+      { scene_count: 3, grid_size: "grid_3", rows: 1, cols: 3, cell_count: 3, placeholder_count: 0, grid_aspect_ratio: "27:16" },
+    ],
+  };
+  it("uses the backend geometry for every full chunk and its remainder", () => {
+    expect(planGridChunks(21, capability)).toEqual([capability.layouts[0], capability.layouts[0], capability.layouts[1]]);
   });
-
-  it.each([
-    [10, "grid_16", 4],
-    [16, "grid_16", 4],
-    [17, "grid_25", 5],
-    [25, "grid_25", 5],
-  ])("uses the %i-scene large layout when the backend raises the cap", (count, gridSize, side) => {
-    const layout = computeGridSize(count, 25);
-    expect(layout.gridSize).toBe(gridSize);
-    expect([layout.rows, layout.cols]).toEqual([side, side]);
-    expect(layout.batchCount).toBe(1);
+  it("does not invent layouts when the capability table is missing or incomplete", () => {
+    expect(planGridChunks(12, null)).toBeNull();
+    expect(planGridChunks(11, capability)).toBeNull();
   });
-
-  it.each([10, 17, 30])("caps at 3×3 for %i scenes under the gated cap", (count) => {
-    const layout = computeGridSize(count, 9);
-    expect(layout.gridSize).toBe("grid_9");
-    expect(layout.cellCount).toBe(9);
-    expect(layout.batchCount).toBe(Math.ceil(count / 9));
-  });
-
-  it("falls back to the gated cap when the backend cap is unknown", () => {
-    expect(computeGridSize(16, undefined).gridSize).toBe("grid_9");
-  });
-
-  it("chunks beyond the largest layout", () => {
-    expect(computeGridSize(30, 25).batchCount).toBe(2);
-  });
-
-  it("returns a null layout for an empty group", () => {
-    expect(computeGridSize(0)).toEqual({
-      gridSize: null,
-      rows: 0,
-      cols: 0,
-      cellCount: 0,
-      batchCount: 0,
-    });
+  it("returns no chunks for an empty group without needing capabilities", () => {
+    expect(planGridChunks(0, null)).toEqual([]);
   });
 });
 

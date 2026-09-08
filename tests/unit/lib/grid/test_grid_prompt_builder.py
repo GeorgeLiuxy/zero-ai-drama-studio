@@ -4,7 +4,6 @@ import pytest
 
 from lib.grid.prompt_builder import (
     _compute_panel_aspect,
-    _extract_action,
     _extract_image_desc,
     build_grid_prompt,
     project_grid_image_prompt,
@@ -51,23 +50,6 @@ class TestExtractImageDesc:
     def test_empty_image_prompt(self):
         scene = {"scene_id": "S1", "image_prompt": ""}
         result = _extract_image_desc(scene)
-        assert result == ""
-
-
-class TestExtractAction:
-    def test_dict_video_prompt_returns_action(self):
-        scene = {"video_prompt": {"action": "walks away", "camera_motion": "pan"}}
-        result = _extract_action(scene)
-        assert result == "walks away"
-
-    def test_string_video_prompt_returns_as_is(self):
-        scene = {"video_prompt": "character runs fast"}
-        result = _extract_action(scene)
-        assert result == "character runs fast"
-
-    def test_dict_missing_action_returns_empty(self):
-        scene = {"video_prompt": {"camera_motion": "zoom"}}
-        result = _extract_action(scene)
         assert result == ""
 
 
@@ -171,7 +153,7 @@ class TestBuildGridPrompt:
         assert "画格大小不一致" in prompt
 
     def test_no_placeholders_when_exact_fit(self):
-        # 4 scenes, 2x2 grid -> no placeholders needed (4 content cells: open, trans, trans, close)
+        # Every scene maps to one first-frame cell.
         scenes = [self._scene(f"S{i}", f"s{i}", f"a{i}") for i in range(1, 5)]
         prompt = build_grid_prompt(scenes=scenes, id_field="scene_id", rows=2, cols=2, style="realistic")
         assert "空占位" not in prompt
@@ -186,10 +168,58 @@ class TestBuildGridPrompt:
     def test_non_square_layout_panel_aspect_ratio(self):
         scenes = [self._scene(f"S{i}", f"s{i}", f"a{i}") for i in range(1, 7)]
         prompt = build_grid_prompt(
-            scenes=scenes, id_field="scene_id", rows=3, cols=2, style="realistic", grid_aspect_ratio="4:3"
+            scenes=scenes,
+            id_field="scene_id",
+            rows=2,
+            cols=3,
+            style="realistic",
+            aspect_ratio="9:16",
+            grid_aspect_ratio="27:32",
         )
-        assert "4:3" in prompt
-        assert _compute_panel_aspect("4:3", 3, 2) in prompt
+        assert "整体图片比例：27:32" in prompt
+        assert "每个画格比例：9:16" in prompt
+
+    def test_rectangular_canvas_is_derived_when_omitted(self):
+        prompt = build_grid_prompt(
+            scenes=[self._scene("S1", "a seated heroine", "stands up")],
+            id_field="scene_id",
+            rows=3,
+            cols=4,
+            style="realistic",
+            aspect_ratio="9:16",
+        )
+        assert "整体图片比例：3:4" in prompt
+        assert "每个画格比例：9:16" in prompt
+        assert prompt.count("空占位") == 11
+
+    def test_inconsistent_canvas_cannot_silently_change_cell_ratio(self):
+        with pytest.raises(ValueError, match="不一致"):
+            build_grid_prompt(
+                scenes=[self._scene("S1", "a seated heroine", "stands up")],
+                id_field="scene_id",
+                rows=3,
+                cols=2,
+                style="realistic",
+                aspect_ratio="16:9",
+                grid_aspect_ratio="4:3",
+            )
+
+    def test_each_cell_uses_its_own_static_first_frame(self):
+        scenes = [
+            self._scene("S1", "heroine seated beside a window", "runs across a courtyard"),
+            self._scene("S2", "father standing by a red door", "opens the door and leaves"),
+        ]
+        prompt = build_grid_prompt(scenes=scenes, id_field="scene_id", rows=1, cols=2, style="realistic")
+
+        assert "格0（row1 col1）— S1首帧：\n  heroine seated beside a window" in prompt
+        assert "格1（row1 col2）— S2首帧：\n  father standing by a red door" in prompt
+        assert "runs across a courtyard" not in prompt
+        assert "opens the door and leaves" not in prompt
+        assert "单格内再次分屏" in prompt
+
+    def test_empty_content_grid_is_all_placeholders(self):
+        prompt = build_grid_prompt(scenes=[], id_field="scene_id", rows=2, cols=2, style="realistic")
+        assert prompt.count("空占位") == 4
 
     @pytest.mark.parametrize(("side", "n_scenes"), [(4, 14), (5, 25)])
     def test_large_square_layout_describes_every_cell(self, side: int, n_scenes: int):

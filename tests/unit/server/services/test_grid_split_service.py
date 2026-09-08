@@ -9,10 +9,11 @@ import pytest
 from PIL import Image
 
 from lib.grid.models import GridGeneration
+from lib.grid.review import GridSplitReviewError
 from lib.grid_manager import GridManager
 from lib.project_manager import ProjectManager
 from lib.project_schema import CURRENT_PROJECT_SCHEMA_VERSION
-from server.services.grid_split import GridImageNotReadyError, apply_grid_split
+from server.services.grid_split import GridImageNotReadyError, apply_grid_split, preview_grid_split
 
 
 @pytest.fixture
@@ -74,11 +75,16 @@ def grid_with_image(project_with_script):
     )
     grid.status = "completed"
     grid.grid_image_path = f"grids/{grid.id}.png"
-    Image.new("RGB", (400, 400), color=(30, 60, 90)).save(project_with_script / "grids" / f"{grid.id}.png")
+    Image.new("RGB", (720, 1280), color=(30, 60, 90)).save(project_with_script / "grids" / f"{grid.id}.png")
     (project_with_script / "grids" / f"{grid.id}.json").write_text(
         json.dumps(grid.to_dict(), ensure_ascii=False), encoding="utf-8"
     )
     return grid
+
+
+async def _apply_reviewed_split(project_name, grid, **kwargs):
+    preview = await preview_grid_split(project_name, grid)
+    return await apply_grid_split(project_name, grid, review_token=preview["review_token"], **kwargs)
 
 
 def _mock_pm(project_with_script, script_data=None):
@@ -135,10 +141,12 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={"grids/x.png": 1}),
         ):
-            result = await apply_grid_split("test-project", grid)
+            result = await _apply_reviewed_split("test-project", grid)
 
         for sid in ("E1S01", "E1S02", "E1S03"):
             assert (storyboards_dir / f"scene_{sid}.png").exists(), f"missing scene_{sid}.png"
+            with Image.open(storyboards_dir / f"scene_{sid}.png") as cell:
+                assert cell.size == (576, 1024)
             assert not (storyboards_dir / f"scene_{sid}_first.png").exists()
             assert not (storyboards_dir / f"scene_{sid}_last.png").exists()
         assert result.updated_scene_ids == ["E1S01", "E1S02", "E1S03"]
@@ -180,7 +188,7 @@ class TestApplyGridSplit:
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
             caplog.at_level(logging.WARNING, logger="server.services.grid_split"),
         ):
-            result = await apply_grid_split("test-project", grid)
+            result = await _apply_reviewed_split("test-project", grid)
 
         storyboards_dir = project_with_script / "storyboards"
         assert (storyboards_dir / "scene_E1S01.png").exists()
@@ -213,7 +221,7 @@ class TestApplyGridSplit:
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
             caplog.at_level(logging.WARNING, logger="server.services.grid_split"),
         ):
-            result = await apply_grid_split("test-project", grid, only_scene_ids=frozenset({"E1S01"}))
+            result = await _apply_reviewed_split("test-project", grid, only_scene_ids=frozenset({"E1S01"}))
 
         assert result.updated_scene_ids == ["E1S01"]
         assert result.missing_scene_ids == []
@@ -227,7 +235,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             pytest.raises(GridImageNotReadyError),
         ):
-            await apply_grid_split("test-project", grid)
+            await _apply_reviewed_split("test-project", grid)
 
     async def test_split_emits_grid_split_event(self, project_with_script, grid_with_image):
         grid = grid_with_image
@@ -237,7 +245,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={"a": 1}) as emit,
         ):
-            result = await apply_grid_split("test-project", grid)
+            result = await _apply_reviewed_split("test-project", grid)
 
         emit.assert_called_once()
         assert emit.call_args.kwargs["task_type"] == "grid_split"
@@ -264,7 +272,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
         ):
-            result = await apply_grid_split("test-project", grid_with_image, task_aware=True)
+            result = await _apply_reviewed_split("test-project", grid_with_image, task_aware=True)
 
         split_grid = GridManager(project_with_script).get(grid_with_image.id)
         assert split_grid is not None
@@ -308,7 +316,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
         ):
-            result = await apply_grid_split("test-project", grid_with_image, task_aware=True)
+            result = await _apply_reviewed_split("test-project", grid_with_image, task_aware=True)
 
         versions = VersionManager(project_with_script)
         later_file = storyboards / "scene_E1S01.png"
@@ -362,7 +370,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             pytest.raises(RuntimeError, match="manifest commit failed"),
         ):
-            await apply_grid_split("test-project", grid_with_image, register_entries=_fail_register)
+            await _apply_reviewed_split("test-project", grid_with_image, register_entries=_fail_register)
 
         assert project_file.read_bytes() == snapshots["project"]
         assert script_file.read_bytes() == snapshots["script"]
@@ -388,7 +396,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         versions = VersionManager(project_with_script)
         selected_version = versions.get_current_version("storyboards", "E1S01")
@@ -436,7 +444,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             pytest.raises(GridImageNotReadyError, match="registered"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert project_file.read_bytes() == before["project"]
         assert script_file.read_bytes() == before["script"]
@@ -471,7 +479,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             pytest.raises(GridImageNotReadyError, match="registered"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert script_file.read_bytes() == script_before
         assert grid_file.read_bytes() == grid_before
@@ -500,7 +508,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         resolver = ArtifactCurrencyResolver(project_with_script)
         for scene_id in ("E1S01", "E1S02", "E1S03"):
@@ -540,7 +548,7 @@ class TestApplyGridSplit:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             pytest.raises(ArtifactManifestError, match="changed during batch registration"),
         ):
-            await apply_grid_split(
+            await _apply_reviewed_split(
                 "test-project",
                 grid_with_image,
                 register_entries=_replace_source_then_register,
@@ -622,7 +630,7 @@ class TestApplyGridSplit:
             ),
             pytest.raises(GridImageNotReadyError, match="changed while being split"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert replaced is True
         assert project_file.read_bytes() == before["project"]
@@ -672,7 +680,7 @@ class TestApplyGridSplit:
         def _replace_composite_then_build(**kwargs):
             nonlocal replaced
             if not replaced:
-                Image.new("RGB", (400, 400), color=(90, 80, 70)).save(composite_file)
+                Image.new("RGB", (720, 1280), color=(90, 80, 70)).save(composite_file)
                 replaced = True
             return original_build(**kwargs)
 
@@ -685,7 +693,7 @@ class TestApplyGridSplit:
             ),
             pytest.raises(GridImageNotReadyError, match="changed while being split"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert replaced is True
         assert project_file.read_bytes() == before["project"]
@@ -711,7 +719,7 @@ class TestApplyGridSplit:
             patch.object(Image.Image, "save", _write_partial_cell_then_fail),
             pytest.raises(RuntimeError, match="cell save failed"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert not tuple((project_with_script / "storyboards").glob(".*.grid-split.png"))
 
@@ -729,13 +737,108 @@ class TestApplyGridSplit:
             patch("lib.script_editor.resolve_items", side_effect=RuntimeError("script resolution failed")),
             pytest.raises(RuntimeError, match="script resolution failed"),
         ):
-            await apply_grid_split("test-project", grid_with_image)
+            await _apply_reviewed_split("test-project", grid_with_image)
 
         assert not tuple(grids_dir.glob(f".{grid_with_image.id}.*.split-source.png"))
 
 
+class TestGridSplitReview:
+    async def test_preview_does_not_publish_or_modify_storyboards(self, project_with_script, grid_with_image):
+        grid = grid_with_image
+        _register_grid(project_with_script, grid)
+        script_file = project_with_script / "scripts" / "episode_1.json"
+        grid_file = project_with_script / "grids" / f"{grid.id}.json"
+        before = (script_file.read_bytes(), grid_file.read_bytes())
+        pm = ProjectManager(project_with_script.parent)
+        with patch("server.services.grid_split.get_project_manager", return_value=pm):
+            preview = await preview_grid_split("test-project", grid)
+        assert preview["valid"] is True
+        assert [cell["scene_id"] for cell in preview["cells"]] == ["E1S01", "E1S02", "E1S03", None]
+        assert preview["cells"][-1]["placeholder"] is True
+        assert (preview["output_width"], preview["output_height"]) == (576, 1024)
+        assert (script_file.read_bytes(), grid_file.read_bytes()) == before
+        assert not tuple((project_with_script / "storyboards").iterdir())
+        assert not (project_with_script / "versions" / "versions.json").exists()
+
+    async def test_unreviewed_source_cannot_write_any_cells(self, project_with_script, grid_with_image):
+        grid = grid_with_image
+        _register_grid(project_with_script, grid)
+        script_file = project_with_script / "scripts" / "episode_1.json"
+        grid_file = project_with_script / "grids" / f"{grid.id}.json"
+        before = (script_file.read_bytes(), grid_file.read_bytes())
+        pm = ProjectManager(project_with_script.parent)
+        with (
+            patch("server.services.grid_split.get_project_manager", return_value=pm),
+            pytest.raises(GridSplitReviewError, match="grid_split_review_required"),
+        ):
+            await apply_grid_split("test-project", grid)
+        assert (script_file.read_bytes(), grid_file.read_bytes()) == before
+        assert not tuple((project_with_script / "storyboards").iterdir())
+        assert not tuple((project_with_script / "grids").glob(".*.split-source.png"))
+        assert not (project_with_script / "versions" / "versions.json").exists()
+
+    async def test_replacing_composite_invalidates_the_review_token(self, project_with_script, grid_with_image):
+        grid = grid_with_image
+        _register_grid(project_with_script, grid)
+        pm = ProjectManager(project_with_script.parent)
+        with patch("server.services.grid_split.get_project_manager", return_value=pm):
+            preview = await preview_grid_split("test-project", grid)
+            Image.new("RGB", (720, 1280), color=(60, 90, 120)).save(project_with_script / "grids" / f"{grid.id}.png")
+            with pytest.raises(GridSplitReviewError, match="grid_split_review_required"):
+                await apply_grid_split("test-project", grid, review_token=preview["review_token"])
+            refreshed = await preview_grid_split("test-project", grid)
+        assert refreshed["valid"] is True
+        assert refreshed["review_token"] != preview["review_token"]
+        assert not tuple((project_with_script / "storyboards").iterdir())
+        assert not (project_with_script / "versions" / "versions.json").exists()
+
+    async def test_wrong_canvas_cannot_be_approved_by_a_valid_token(self, project_with_script, grid_with_image):
+        grid = grid_with_image
+        Image.new("RGB", (720, 720), color=(30, 60, 90)).save(project_with_script / "grids" / f"{grid.id}.png")
+        _register_grid(project_with_script, grid)
+        pm = ProjectManager(project_with_script.parent)
+        with patch("server.services.grid_split.get_project_manager", return_value=pm):
+            preview = await preview_grid_split("test-project", grid)
+            assert preview["valid"] is False
+            assert "grid_aspect_ratio_mismatch" in preview["issues"]
+            with pytest.raises(GridSplitReviewError, match="grid_geometry_invalid"):
+                await apply_grid_split("test-project", grid, review_token=preview["review_token"])
+        assert not tuple((project_with_script / "storyboards").iterdir())
+        assert not (project_with_script / "versions" / "versions.json").exists()
+
+    async def test_reviewed_cells_have_exact_dimensions_and_saved_review_evidence(
+        self, project_with_script, grid_with_image
+    ):
+        from lib.grid.review import GRID_REVIEW_VERSION
+        from lib.version_manager import VersionManager
+
+        grid = grid_with_image
+        _register_grid(project_with_script, grid)
+        pm = ProjectManager(project_with_script.parent)
+        with (
+            patch("server.services.grid_split.get_project_manager", return_value=pm),
+            patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
+        ):
+            preview = await preview_grid_split("test-project", grid)
+            result = await apply_grid_split("test-project", grid, review_token=preview["review_token"])
+        assert result.updated_scene_ids == ["E1S01", "E1S02", "E1S03"]
+        script = pm.load_script("test-project", "episode_1.json")
+        versions = VersionManager(project_with_script)
+        for item in script["segments"]:
+            scene_id = item["segment_id"]
+            assert item["generated_assets"]["grid_id"] == grid.id
+            with Image.open(project_with_script / item["generated_assets"]["storyboard_image"]) as cell:
+                assert cell.size == (576, 1024)
+            selected = next(
+                record for record in versions.get_versions("storyboards", scene_id)["versions"] if record["is_current"]
+            )
+            assert selected["grid_review_version"] == GRID_REVIEW_VERSION
+            assert selected["grid_review_token"] == preview["review_token"]
+            assert selected["first_frame_size"] == [576, 1024]
+
+
 class TestSplitAspectRatio:
-    """切分按联合图产出时冻结的比例裁切，而非项目当下的 aspect_ratio。"""
+    """切分要求冻结的比例与项目当前设置一致，存量记录沿用当前比例。"""
 
     async def _split_and_measure(self, project_with_script, grid) -> tuple[int, int]:
         GridManager(project_with_script).save(grid)
@@ -745,22 +848,25 @@ class TestSplitAspectRatio:
             patch("server.services.grid_split.get_project_manager", return_value=pm),
             patch("server.services.generation_tasks.emit_generation_success_batch", return_value={}),
         ):
-            await apply_grid_split("test-project", grid)
+            await _apply_reviewed_split("test-project", grid)
         with Image.open(project_with_script / "storyboards" / "scene_E1S01.png") as cell:
             return cell.size
 
-    async def test_uses_frozen_ratio_after_project_ratio_changed(self, project_with_script, grid_with_image):
-        """项目从 16:9 改到 9:16 后再切历史联合图，各格仍按 16:9 裁切。
-
-        读项目当下设置会把横版格中心裁成竖版，每格丢掉大半宽度。
-        """
+    async def test_project_ratio_change_requires_replanning(self, project_with_script, grid_with_image):
+        """Frozen landscape panels cannot be assigned to a portrait project."""
         grid = grid_with_image
         grid.video_aspect_ratio = "16:9"
-
-        width, height = await self._split_and_measure(project_with_script, grid)
-
-        assert width > height, f"应按记录冻结的 16:9 裁成横版，实际 {width}x{height}"
-        assert abs(width / height - 16 / 9) < 0.05
+        Image.new("RGB", (1280, 720), color=(30, 60, 90)).save(project_with_script / "grids" / f"{grid.id}.png")
+        GridManager(project_with_script).save(grid)
+        _register_grid(project_with_script, grid)
+        pm = ProjectManager(project_with_script.parent)
+        with patch("server.services.grid_split.get_project_manager", return_value=pm):
+            preview = await preview_grid_split("test-project", grid)
+            assert preview["valid"] is False
+            assert preview["issues"] == ["project_aspect_changed"]
+            with pytest.raises(GridSplitReviewError, match="grid_geometry_invalid"):
+                await apply_grid_split("test-project", grid, review_token=preview["review_token"])
+        assert not tuple((project_with_script / "storyboards").glob("scene_*.png"))
 
     async def test_legacy_record_without_ratio_falls_back_to_project(self, project_with_script, grid_with_image):
         """存量记录没有该字段，退回项目当前设置（9:16），保持既有行为。"""
@@ -769,5 +875,4 @@ class TestSplitAspectRatio:
 
         width, height = await self._split_and_measure(project_with_script, grid)
 
-        assert height > width, f"应回退到项目的 9:16，实际 {width}x{height}"
-        assert abs(height / width - 16 / 9) < 0.05
+        assert (width, height) == (576, 1024)

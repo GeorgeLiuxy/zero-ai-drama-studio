@@ -1,26 +1,4 @@
-export interface GridLayout {
-  gridSize: "grid_4" | "grid_9" | "grid_16" | "grid_25" | null;
-  rows: number;
-  cols: number;
-  cellCount: number;
-  batchCount: number;
-}
-
-/**
- * 档位阶梯，与后端 lib/grid/layout.py 的 _GRID_LADDER 逐项对应:
- * 全部为 N×N 平方切分,单格比例恒等于整图比例(即项目视频比例)。
- * 哪几档可用由格数上限决定,上限取自后端 /grid-capability 的 max_cell_count
- * (4K 门控要经供应商解析才能定,前端不自行推导分辨率档)。
- */
-const GRID_LADDER = [
-  { cellCount: 4, gridSize: "grid_4", side: 2 },
-  { cellCount: 9, gridSize: "grid_9", side: 3 },
-  { cellCount: 16, gridSize: "grid_16", side: 4 },
-  { cellCount: 25, gridSize: "grid_25", side: 5 },
-] as const;
-
-/** 拿不到后端上限时按门控生效展示(封顶 3×3),宁可少算批次也不虚报 */
-const FALLBACK_MAX_CELL_COUNT = 9;
+import type { GridCapability, GridLayoutPlan } from "@/types/grid";
 
 interface GridMatchRecord {
   id: string;
@@ -83,15 +61,19 @@ export function groupBySegmentBreak<S extends { segment_break?: boolean }>(
   return groups;
 }
 
-export function computeGridSize(
+export function planGridChunks(
   count: number,
-  maxCellCount: number = FALLBACK_MAX_CELL_COUNT
-): GridLayout {
-  if (count < 1) return { gridSize: null, rows: 0, cols: 0, cellCount: 0, batchCount: 0 };
-  const effective = Math.min(count, maxCellCount);
-  const { cellCount, gridSize, side } =
-    GRID_LADDER.find((cfg) => effective <= cfg.cellCount) ?? GRID_LADDER[GRID_LADDER.length - 1];
-
-  const batchCount = count > cellCount ? Math.ceil(count / cellCount) : 1;
-  return { gridSize, rows: side, cols: side, cellCount, batchCount };
+  capability: GridCapability | null,
+): GridLayoutPlan[] | null {
+  if (count < 1) return [];
+  if (!capability || capability.max_cell_count < 1 || !capability.layouts?.length) return null;
+  const chunks: GridLayoutPlan[] = [];
+  for (let remaining = count; remaining > 0;) {
+    const chunkCount = Math.min(remaining, capability.max_cell_count);
+    const layout = capability.layouts.find((candidate) => candidate.scene_count === chunkCount);
+    if (!layout) return null;
+    chunks.push(layout);
+    remaining -= chunkCount;
+  }
+  return chunks;
 }
