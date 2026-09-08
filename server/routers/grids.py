@@ -41,6 +41,7 @@ from lib.storyboard_sequence import get_storyboard_items, group_scenes_by_segmen
 from lib.version_manager import VersionManager
 from server.auth import CurrentUser
 from server.services.grid_access import ensure_grid_writable
+from server.services.grid_readiness import describe_grid_readiness
 from server.services.grid_resolution import resolve_large_grid_allowed
 from server.services.grid_split import GridImageNotReadyError, apply_grid_split, preview_grid_split
 from server.services.reference_admission import require_admitted_storyboard_references
@@ -288,7 +289,7 @@ async def list_grids(project_name: str):
     except ValueError as exc:
         raise BadRequestError("invalid_project_name", name=project_name) from exc
     gm = GridManager(project_path)
-    return [g.to_dict() for g in gm.list_all()]
+    return await asyncio.to_thread(describe_grid_readiness, project_path, gm.list_all())
 
 
 # ==================== 宫格图详情 ====================
@@ -313,7 +314,7 @@ async def get_grid(project_name: str, grid_id: str):
     except ValueError as exc:
         raise BadRequestError("invalid_project_name", name=project_name) from exc
     grid = _load_grid_or_404(project_path, grid_id)
-    return grid.to_dict()
+    return (await asyncio.to_thread(describe_grid_readiness, project_path, [grid]))[0]
 
 
 # ==================== 重新生成宫格图 ====================

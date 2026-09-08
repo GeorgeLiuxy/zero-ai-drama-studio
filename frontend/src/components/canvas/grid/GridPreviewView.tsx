@@ -40,7 +40,8 @@ export function GridPreviewView({
 }: GridPreviewViewProps) {
   const { t } = useTranslation("dashboard");
   const gridsRevision = useAppStore((s) => s.gridsRevision);
-  const [grids, setGrids] = useState<GridGeneration[]>([]);
+  const [gridResult, setGridResult] = useState<{ project: string; grids: GridGeneration[] } | null>(null);
+  const grids = useMemo(() => gridResult?.project === projectName ? gridResult.grids : [], [gridResult, projectName]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [generatingGroups, setGeneratingGroups] = useState<Set<string>>(new Set());
   const capabilityKey = useProjectsStore((state) => {
@@ -69,18 +70,19 @@ export function GridPreviewView({
   }, [projectName, capabilityKey, gridsRevision]);
 
   const refreshGrids = useCallback(() => {
-    if (!projectName) return;
-    API.listGrids(projectName)
-      .then((data) => {
-        setGrids(data);
-        setRefreshKey((v) => v + 1);
-      })
-      .catch(() => {});
-  }, [projectName]);
+    setRefreshKey((v) => v + 1);
+  }, []);
 
   useEffect(() => {
-    refreshGrids();
-  }, [refreshGrids, gridsRevision]);
+    if (!projectName) return;
+    const controller = new AbortController();
+    API.listGrids(projectName, { signal: controller.signal })
+      .then((data) => {
+        if (!controller.signal.aborted) setGridResult({ project: projectName, grids: data });
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [projectName, refreshKey, gridsRevision]);
 
   const getGridIdsForGroup = useCallback(
     (groupSegs: Segment[]): string[] =>
@@ -118,21 +120,21 @@ export function GridPreviewView({
       ? plans.reduce((sum, plan) => sum + plan.length, 0)
       : "—";
     const cells = segments.length;
-    const readyBatches = groups.filter((group) => {
+    const readyScenes = new Set<string>();
+    const generatedGrids = new Set<string>();
+    const currentGrids = new Set<string>();
+    for (const group of groups) {
       const sceneIds = group.map((s) => getSegmentId(s, contentMode));
-      // chunk 拆分后,group 内可能有多条 grid;全部 completed 且并集覆盖整组才算就绪。
       const groupGrids = matchGridsForGroup(grids, sceneIds, episode);
-      if (groupGrids.length === 0) return false;
-      const covered = new Set<string>();
       for (const g of groupGrids) {
-        if (g.status !== "completed") return false;
-        for (const id of g.scene_ids) covered.add(id);
+        currentGrids.add(g.id);
+        if (g.status === "completed" && g.readiness?.image_exists) generatedGrids.add(g.id);
+        for (const id of g.readiness?.ready_scene_ids ?? []) {
+          if (sceneIds.includes(id)) readyScenes.add(id);
+        }
       }
-      return sceneIds.every((id) => covered.has(id));
-    }).length;
-    // 就绪率按分组算(一组内多张宫格全部完成才算就绪),分母用分组数而非宫格张数
-    const percent = groups.length > 0 ? Math.round((readyBatches / groups.length) * 100) : 0;
-    return { batches, cells, percent };
+    }
+    return { batches, cells, ready: readyScenes.size, generated: generatedGrids.size, total: currentGrids.size };
   }, [groups, segments, grids, episode, contentMode, capability]);
 
   if (segments.length === 0) {
@@ -218,13 +220,14 @@ export function GridPreviewView({
                       {generating
                         ? t("submitting")
                         : ids.length > 0
-                          ? t("grid_regenerate_btn")
+                          ? t("grid_regenerate_group_btn")
                           : t("grid_preview_batch_generate")}
                     </span>
                   </button>
                 )}
               </div>
               <div className="space-y-1 px-4 py-2 text-xs" style={{ color: "var(--color-text-3)" }}>
+                <p>{ids.length > 0 ? t("grid_regeneration_plan") : t("grid_generation_plan")}</p>
                 {chunks ? chunks.map((chunk, chunkIndex) => (
                   <p key={chunkIndex}>
                     {t("grid_preview_chunk_plan", {
@@ -242,6 +245,8 @@ export function GridPreviewView({
               <GridPreviewPanel
                 projectName={projectName}
                 gridIds={ids}
+                layouts={capability?.layouts}
+                videoAspectRatio={capability?.video_aspect_ratio}
                 onRegenerated={refreshGrids}
                 refreshKey={refreshKey}
                 defaultExpanded

@@ -23,7 +23,7 @@ import { useAppStore } from "@/stores/app-store";
 import { isResourceBusy, useActiveResourceIds } from "@/stores/tasks-store";
 import { VersionTimeMachine } from "@/components/canvas/timeline/VersionTimeMachine";
 import { GridSplitReview } from "@/components/canvas/timeline/GridSplitReview";
-import type { GridGeneration, GridSplitPreview, ReferenceImage } from "@/types/grid";
+import type { GridGeneration, GridLayoutPlan, GridSplitPreview, ReferenceImage } from "@/types/grid";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,12 +32,25 @@ import type { GridGeneration, GridSplitPreview, ReferenceImage } from "@/types/g
 export interface GridPreviewPanelProps {
   projectName: string;
   gridIds: string[];
+  layouts?: GridLayoutPlan[];
+  videoAspectRatio?: string;
   /** Called after a regeneration is submitted (for parent to refresh grids list). */
   onRegenerated?: () => void;
   /** Changed when grids list is refreshed, triggers re-fetch of panel data. */
   refreshKey?: number;
   /** Render in expanded state on first mount. Used by the dedicated grid preview tab. */
   defaultExpanded?: boolean;
+}
+
+function canvasRatio(grid: GridGeneration): string {
+  const [width, height] = (grid.video_aspect_ratio ?? "").split(":").map(Number);
+  const x = width * grid.cols;
+  const y = height * grid.rows;
+  if (![x, y].every((value) => Number.isSafeInteger(value) && value > 0)) return "—";
+  let divisor = x;
+  let remainder = y;
+  while (remainder !== 0) [divisor, remainder] = [remainder, divisor % remainder];
+  return `${x / divisor}:${y / divisor}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +171,8 @@ function ReferenceImageStrip({
 export function GridPreviewPanel({
   projectName,
   gridIds,
+  layouts,
+  videoAspectRatio,
   onRegenerated,
   refreshKey = 0,
   defaultExpanded = false,
@@ -180,6 +195,7 @@ export function GridPreviewPanel({
   const [uploading, setUploading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewRequest = useRef<AbortController | null>(null);
   const { t } = useTranslation("dashboard");
 
   const hasGrids = gridIds.length > 0;
@@ -187,9 +203,7 @@ export function GridPreviewPanel({
   const safeIdx = Math.min(selectedIdx, Math.max(0, gridIds.length - 1));
   const selectedGridId = gridIds[safeIdx] ?? null;
 
-  // 直接订阅全局 grid 变更信号作为唯一 refetch 触发源；
-  // parent 透传的 refreshKey 是同一事件流（gridsRevision → listGrids → setRefreshKey）
-  // 的下游产物，加入 deps 会导致每次事件多发一次冗余 GET /grids/{id}。
+  // 全局资源变更和父级主动刷新均重拉详情，正式首帧状态由后端重新检查。
   const gridsRevision = useAppStore((s) => s.gridsRevision);
 
   // safeIdx already clamps selectedIdx to valid range; no effect needed
@@ -209,6 +223,8 @@ export function GridPreviewPanel({
       setGrid(null);
     }
     setError(null);
+    setPreviewing(false);
+    setSplitReview(null);
 
     API.getGrid(projectName, selectedGridId)
       .then((data) => {
@@ -227,9 +243,10 @@ export function GridPreviewPanel({
 
     return () => {
       cancelled = true;
+      previewRequest.current?.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- grid 仅用于切换批次判断；refreshKey 与 gridsRevision 同源，仅保留后者避免双触发；t 稳定
-  }, [expanded, selectedGridId, projectName, gridsRevision]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- grid 仅用于切换批次判断；t 稳定
+  }, [expanded, selectedGridId, projectName, gridsRevision, refreshKey]);
 
   // 占用判定接入 live tasks store：与同页兄弟控件同源，
   // 不再依赖本地 grid.status 快照（刷新才更新，提交后到下次 fetch 之间会误判为空闲）。
@@ -254,9 +271,7 @@ export function GridPreviewPanel({
       .then((res) => {
         setSplitReview(null);
         useProjectsStore.getState().updateAssetFingerprints(res.asset_fingerprints);
-        // 只回写发起切分的那个宫格：批次切换不受动作禁用限制，请求在途时用户可能已切到
-        // 别的宫格，无条件回写会把该请求的 split_at 记到另一个宫格上。
-        setGrid((prev) => (prev && prev.id === selectedGridId ? { ...prev, split_at: res.split_at } : prev));
+        useAppStore.getState().invalidateGrids();
         useAppStore
           .getState()
           .pushToast(t("grid_split_success", { count: res.updated_scene_ids.length }), "success");
@@ -314,14 +329,21 @@ export function GridPreviewPanel({
     }
     setPreviewing(true);
     setSplitReview(null);
+    const controller = new AbortController();
+    previewRequest.current?.abort();
+    previewRequest.current = controller;
     API.getGridSplitPreview(projectName, selectedGridId)
       .then((preview) => {
+        if (controller.signal.aborted) return;
         setSplitReview({ project: projectName, gridId: selectedGridId, revision: gridsRevision, fingerprint: gridFp, preview });
       })
       .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
         useAppStore.getState().pushToast(t("grid_split_failed", { message: errMsg(err) }), "error");
       })
-      .finally(() => setPreviewing(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setPreviewing(false);
+      });
   };
   const imageUrl =
     grid?.grid_image_path
@@ -329,6 +351,12 @@ export function GridPreviewPanel({
       : null;
 
   const refs = grid?.reference_images ?? [];
+  const plannedLayout = layouts?.find((layout) => layout.scene_count === grid?.scene_ids.length);
+  const layoutChanged = grid && plannedLayout && (
+    grid.rows !== plannedLayout.rows || grid.cols !== plannedLayout.cols
+    || grid.video_aspect_ratio !== videoAspectRatio
+  );
+  const readyCount = grid ? new Set((grid.readiness?.ready_scene_ids ?? []).filter((id) => grid.scene_ids.includes(id))).size : 0;
 
   return (
     <div>
@@ -399,7 +427,7 @@ export function GridPreviewPanel({
                 /* Grid loaded */
                 <div className="flex flex-col gap-3">
                   {/* Top bar: batch pills + status + regen */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {multipleGrids && (
                       <div className="flex items-center gap-0.5 rounded-md bg-gray-900/50 p-0.5">
                         {gridIds.map((_, idx) => (
@@ -407,13 +435,14 @@ export function GridPreviewPanel({
                             key={idx}
                             type="button"
                             onClick={() => setSelectedIdx(idx)}
+                            aria-pressed={idx === safeIdx}
                             className={`inline-flex h-5 min-w-[1.375rem] items-center justify-center rounded px-1 text-[10px] font-medium tabular-nums transition-all duration-150 ${
                               idx === safeIdx
                                 ? "bg-amber-700/50 text-amber-200 shadow-sm"
                                 : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/60"
                             }`}
                           >
-                            {idx + 1}
+                            {t("grid_image_page", { index: idx + 1 })}
                           </button>
                         ))}
                       </div>
@@ -421,10 +450,10 @@ export function GridPreviewPanel({
 
                     <StatusBadge status={grid.status} t={t} />
 
-                    {grid.status === "completed" && grid.grid_image_path && !grid.split_at && (
+                    {grid.status === "completed" && grid.grid_image_path && grid.readiness?.image_exists !== false && readyCount < grid.scene_ids.length && grid.readiness?.geometry_valid !== false && (
                       <span className="inline-flex items-center gap-1 rounded border border-violet-700/40 bg-violet-950/60 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-violet-300">
                         <Scissors className="h-3 w-3" />
-                        {t("grid_unsplit_hint")}
+                        {t("grid_frames_pending")}
                       </span>
                     )}
 
@@ -505,7 +534,7 @@ export function GridPreviewPanel({
                         ) : (
                           <Scissors className="h-3 w-3" />
                         )}
-                        {splitting ? t("grid_splitting") : previewing ? t("grid_review_loading") : t("grid_split_btn")}
+                        {splitting ? t("grid_splitting") : previewing ? t("grid_review_loading") : t("grid_split_current_btn")}
                       </motion.button>
 
                       <motion.button
@@ -526,7 +555,7 @@ export function GridPreviewPanel({
                           setSplitReview(null);
                           enqueueGridRegenerate(projectName, selectedGridId, grid?.script_file ?? null)
                             .then(() => {
-                              setGrid((prev) => prev ? { ...prev, status: "pending" } : prev);
+                              setGrid((prev) => prev?.id === selectedGridId ? { ...prev, status: "pending" } : prev);
                               onRegenerated?.();
                             })
                             .catch((err: unknown) => {
@@ -540,10 +569,25 @@ export function GridPreviewPanel({
                         whileTap={actionBusy ? {} : { scale: 0.95 }}
                       >
                         <RefreshCw className={`h-3 w-3 ${regenerating || isInProgress ? "animate-spin" : ""}`} />
-                        {regenerating ? t("grid_regenerating") : isInProgress ? t("generating_grid") : t("grid_regenerate_btn")}
+                        {regenerating ? t("grid_regenerating") : isInProgress ? t("generating_grid") : t("grid_regenerate_current_btn")}
                       </motion.button>
                     </div>
                   </div>
+
+                  <p className="text-xs text-gray-400">
+                    {t("grid_current_scope", { index: safeIdx + 1, total: gridIds.length, scenes: grid.scene_ids.length, ready: readyCount })}
+                  </p>
+                  {grid.grid_image_path && grid.readiness?.image_exists === false && (
+                    <p className="text-xs text-red-300">{t("grid_image_missing")}</p>
+                  )}
+                  {grid.readiness?.geometry_valid === false && (
+                    <p className="text-xs text-red-300">{t("grid_geometry_invalid")}</p>
+                  )}
+                  {layoutChanged && (
+                    <p className="text-xs text-amber-300">
+                      {t("grid_layout_changed")}
+                    </p>
+                  )}
 
                   {/* Composite image + metadata */}
                   {imageUrl ? (
@@ -553,9 +597,9 @@ export function GridPreviewPanel({
                         alt={t("grid_composite_image_alt")}
                         className="block max-h-64 w-full object-contain bg-black/20"
                       />
-                      <div className="flex items-center gap-2 border-t border-gray-800/50 px-2.5 py-1.5">
+                      <div className="flex flex-wrap items-center gap-2 border-t border-gray-800/50 px-2.5 py-1.5">
                         <span className="font-mono text-[10px] text-gray-500">
-                          {t("grid_frozen_layout", { scenes: grid.scene_ids.length, rows: grid.rows, cols: grid.cols, placeholders: grid.cell_count - grid.scene_ids.length })}
+                          {t("grid_frozen_layout", { scenes: grid.scene_ids.length, rows: grid.rows, cols: grid.cols, placeholders: grid.cell_count - grid.scene_ids.length, canvasRatio: canvasRatio(grid) })}
                         </span>
                         <span className="text-[10px] text-gray-700">
                           {grid.video_aspect_ratio && t("grid_first_frame_ratio", { ratio: grid.video_aspect_ratio })}

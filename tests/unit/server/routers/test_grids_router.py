@@ -736,6 +736,8 @@ def test_list_grids_success(monkeypatch, tmp_path):
         body = resp.json()
         assert len(body) == 1
         assert body[0]["id"] == grid.id
+        assert body[0]["readiness"]["image_exists"] is False
+        assert body[0]["readiness"]["ready_scene_ids"] == []
 
 
 def test_get_grid_success(monkeypatch, tmp_path):
@@ -756,6 +758,8 @@ def test_get_grid_success(monkeypatch, tmp_path):
         resp = client.get(f"/api/v1/projects/demo/grids/{grid.id}")
         assert resp.status_code == 200
         assert resp.json()["id"] == grid.id
+        assert resp.json()["readiness"]["geometry_valid"] is None
+        assert resp.json()["readiness"]["ready_scene_ids"] == []
 
 
 @pytest.mark.parametrize(

@@ -1248,9 +1248,20 @@ export default {
   'insufficient_scenes_for_grid': 'Chưa đủ cảnh để tạo phân cảnh đa lưới',
 
   // GridPreviewPanel
+  'grid_layout_changed': 'Ảnh này giữ bố cục đã lưu. Kế hoạch phía trên áp dụng khi tạo lại toàn bộ nhóm theo cài đặt hiện tại. Tạo lại hoặc cắt riêng ảnh này vẫn dùng bố cục đã lưu.',
+  'grid_image_missing': 'Tệp ảnh ghép bị thiếu. Hãy tạo lại ảnh này hoặc tải lên ảnh thay thế.',
+  'grid_geometry_invalid': 'Ảnh ghép không đạt kiểm tra kích thước hoặc đường phân cách nên chưa thể gán. Hãy tạo lại ảnh này hoặc tải lên ảnh phù hợp.',
+  'grid_frames_pending': 'Khung đầu cần kiểm tra hoặc xác nhận',
+  'grid_current_scope': 'Ảnh {{index}}/{{total}} · Chỉ xử lý {{scenes}} cảnh trong ảnh này · Khung đầu sẵn sàng {{ready}}/{{scenes}}',
+  'grid_image_page': 'Ảnh {{index}}',
+  'grid_regeneration_plan': 'Tạo lại toàn bộ nhóm sẽ dùng bố cục này; ảnh hiện có không tự thay đổi.',
+  'grid_generation_plan': 'Bố cục theo cài đặt hiện tại:',
+  'grid_split_current_btn': 'Xem trước cắt ảnh hiện tại',
+  'grid_regenerate_current_btn': 'Tạo lại ảnh hiện tại',
+  'grid_regenerate_group_btn': 'Tạo lại toàn bộ nhóm',
   'grid_status_pending': 'Đang chờ',
   'grid_status_generating': 'Đang tạo',
-  'grid_status_completed': 'Hoàn tất',
+  'grid_status_completed': 'Đã tạo ảnh ghép',
   'grid_status_failed': 'Thất bại',
   'grid_unsplit_hint': 'Chưa tách',
   'grid_preview_title': 'Xem trước phân cảnh đa lưới',
@@ -1269,7 +1280,7 @@ export default {
   'grid_no_image': 'Không có ảnh',
   'grid_reference_images': 'Ảnh tham chiếu',
   'grid_split_btn': 'Xem trước ô cắt',
-  'grid_preview_chunk_plan': 'Ảnh dự kiến {{index}}: {{scenes}} cảnh · {{rows}} hàng × {{cols}} cột · {{placeholders}} ô trống · ảnh ghép {{canvasRatio}} · khung đầu {{frameRatio}}',
+  'grid_preview_chunk_plan': 'Ảnh {{index}}: {{scenes}} cảnh · {{rows}} hàng × {{cols}} cột · {{placeholders}} ô trống · Tỷ lệ ảnh ghép yêu cầu {{canvasRatio}} · Tỷ lệ khung đầu yêu cầu {{frameRatio}}',
   'grid_preview_layout_unavailable': 'Chưa tải được khả năng bố cục. Số hàng, cột và ảnh sẽ được xác định theo tỷ lệ video và khả năng mô hình khi tạo.',
   'grid_review_title': 'Kiểm tra từng khung hình đầu',
   'grid_review_instruction': 'Kiểm tra mỗi ô chỉ có một hình ảnh hoàn chỉnh, đúng cảnh và không chứa ảnh liền kề hay đường phân cách. Kiểm tra kích thước không thay thế kiểm tra hình ảnh. Xác nhận để lưu khung hình đầu.',
@@ -1282,8 +1293,8 @@ export default {
   'grid_review_confirm': 'Đã kiểm tra tất cả ô, lưu khung đầu',
   'grid_review_cancel': 'Hủy áp dụng ô cắt',
   'grid_review_loading': 'Đang chuẩn bị xem trước…',
-  'grid_frozen_layout': 'Ảnh hiện tại: {{scenes}} cảnh · {{rows}} hàng × {{cols}} cột · {{placeholders}} ô trống',
-  'grid_first_frame_ratio': 'Khung đầu {{ratio}}',
+  'grid_frozen_layout': 'Bố cục đã lưu: {{scenes}} cảnh · {{rows}} hàng × {{cols}} cột · {{placeholders}} ô trống · Tỷ lệ ảnh ghép yêu cầu {{canvasRatio}}',
+  'grid_first_frame_ratio': 'Tỷ lệ khung đầu yêu cầu {{ratio}}',
   'grid_review_issue_project_aspect_changed': 'Tỷ lệ video dự án đã thay đổi, ảnh ghép không còn phù hợp.',
   'grid_review_issue_scene_mapping_mismatch': 'Các ô không khớp với ánh xạ cảnh hiện tại.',
   'grid_review_issue_invalid_grid_dimensions': 'Kích thước ảnh hoặc số hàng, cột không hợp lệ.',
@@ -1301,7 +1312,7 @@ export default {
   'grid_split_failed': 'Tách thất bại: {{message}}',
   'grid_upload_btn': 'Tải ảnh lên',
   'grid_uploading': 'Đang tải lên...',
-  'grid_upload_success': 'Đã tải ảnh ghép lên; sẵn sàng tách vào khung hình',
+  'grid_upload_success': 'Đã tải ảnh ghép lên. Hãy xem trước và kiểm tra trước khi gán khung đầu.',
   'grid_upload_failed': 'Tải lên thất bại: {{message}}',
 
   // StudioCanvasRouter
@@ -1486,8 +1497,8 @@ export default {
 
   // Tab labels (timeline / grid canvas)
   'tab_grid_preview': 'Phân cảnh đa lưới',
-  'grid_preview_summary': 'Dự kiến {{batches}} ảnh ghép · {{cells}} cảnh · {{percent}}% sẵn sàng',
-  'grid_preview_batch_card_title': 'Nhóm #{{index}} · {{cellCount}} cảnh · dự kiến {{batches}} ảnh ghép',
+  'grid_preview_summary': 'Khung đầu sẵn sàng {{ready}}/{{cells}} · Ảnh ghép hiện tại đã tạo {{generated}}/{{total}} · Kế hoạch tạo: {{batches}} ảnh ghép',
+  'grid_preview_batch_card_title': 'Nhóm #{{index}} · {{cellCount}} cảnh · Kế hoạch tạo: {{batches}} ảnh ghép',
   'grid_preview_batch_generate': 'Tạo phân cảnh đa lưới này',
   'grid_preview_empty_episode': 'Tập này chưa có phân cảnh — hãy tách phân cảnh ở bước Kế hoạch kịch bản trước',
 

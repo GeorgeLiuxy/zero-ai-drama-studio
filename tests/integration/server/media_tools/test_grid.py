@@ -125,7 +125,7 @@ async def test_generate_grid_list_only_shows_split_for_oversized_group(
     out = await call(tool_obj, {"script": "episode_1.json", "list_only": True})
     assert out.get("is_error") is not True
     text = out["content"][0]["text"]
-    assert "2 张宫格: grid_9 (3×3) + grid_3 (3×1)" in text
+    assert "2 张宫格: grid_9 (3×3) + grid_4 (2×2)" in text
 
 
 async def test_generate_grid_falls_back_on_null_aspect_ratio(
@@ -733,17 +733,19 @@ async def test_generate_grid_splits_oversized_group_into_multiple_grids(
     # 每张生成成功的宫格都被显式切分
     assert len(split_calls) == 2
 
-    assert [(len(p["scene_ids"]), p["grid_size"]) for p in payloads] == [(9, "grid_9"), (3, "grid_3")]
+    assert [(len(p["scene_ids"]), p["grid_size"]) for p in payloads] == [(9, "grid_9"), (3, "grid_4")]
     # 场景不重不漏且保持顺序
     assert [sid for p in payloads for sid in p["scene_ids"]] == all_ids
     # 每张的 prompt 按自身块与档位构建
     assert "3×3" in payloads[0]["prompt"]
-    assert "3×1" in payloads[1]["prompt"]
+    assert "2×2" in payloads[1]["prompt"]
+    assert payloads[1]["grid_aspect_ratio"] == payloads[1]["video_aspect_ratio"]
 
     # 落盘的 grid 记录与 payload 一致，帧链长度等于格数
     grids = sorted(GridManager(fake_ctx.project_path).list_all(), key=lambda g: len(g.scene_ids), reverse=True)
-    assert [(g.scene_ids, g.rows, g.cols) for g in grids] == [(all_ids[:9], 3, 3), (all_ids[9:], 3, 1)]
+    assert [(g.scene_ids, g.rows, g.cols) for g in grids] == [(all_ids[:9], 3, 3), (all_ids[9:], 2, 2)]
     assert all(len(g.frame_chain) == g.rows * g.cols for g in grids)
+    assert grids[1].frame_chain[-1].frame_type == "placeholder"
 
 
 async def test_generate_grid_wrong_mode(fake_ctx: ToolContext) -> None:

@@ -97,8 +97,9 @@ def grid_aspect_ratio_for(rows: int, cols: int, aspect_ratio: str) -> str:
 def calculate_grid_layout(num_scenes: int, aspect_ratio: str, *, allow_large_grid: bool = False) -> GridLayout | None:
     """Choose a bounded rectangular layout while keeping every cell's ratio.
 
-    Candidates have at most five rows/columns and canvas ratios from 1:3 to 3:1.
-    Fewer placeholders wins first, followed by a canvas closer to square.
+    One to four scenes use a 2x2 canvas with unused cells as placeholders. Larger
+    candidates have at most five rows/columns and prefer fewer placeholders,
+    then a canvas closer to square. All canvas ratios stay from 1:3 to 3:1.
     Reciprocal video ratios produce transposed layouts. Counts over the capacity
     describe the first full chunk; use plan_grid_chunks to retain every scene.
     """
@@ -111,6 +112,8 @@ def calculate_grid_layout(num_scenes: int, aspect_ratio: str, *, allow_large_gri
     candidates: list[tuple[tuple[int, Fraction, int, int, int], int, int]] = []
     for rows in range(1, _MAX_GRID_SIDE + 1):
         for cols in range(1, _MAX_GRID_SIDE + 1):
+            if effective <= 4 and (rows, cols) != (2, 2):
+                continue
             count = rows * cols
             if not effective <= count <= cap:
                 continue

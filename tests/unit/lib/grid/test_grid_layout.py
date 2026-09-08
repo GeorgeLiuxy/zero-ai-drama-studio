@@ -18,10 +18,14 @@ class TestCalculateGridLayout:
     @pytest.mark.parametrize(
         ("count", "aspect_ratio", "large", "rows", "cols", "canvas", "placeholders"),
         [
-            (1, "9:16", False, 1, 1, "9:16", 0),
-            (2, "9:16", False, 1, 2, "9:8", 0),
-            (3, "9:16", False, 1, 3, "27:16", 0),
+            (1, "9:16", False, 2, 2, "9:16", 3),
+            (2, "9:16", False, 2, 2, "9:16", 2),
+            (3, "9:16", False, 2, 2, "9:16", 1),
             (4, "9:16", False, 2, 2, "9:16", 0),
+            (1, "16:9", True, 2, 2, "16:9", 3),
+            (2, "1:1", False, 2, 2, "1:1", 2),
+            (3, "8:6", True, 2, 2, "4:3", 1),
+            (4, "3:1", False, 2, 2, "3:1", 0),
             (5, "9:16", False, 1, 5, "45:16", 0),
             (6, "9:16", False, 2, 3, "27:32", 0),
             (7, "9:16", False, 2, 4, "9:8", 1),
@@ -59,9 +63,10 @@ class TestCalculateGridLayout:
         with pytest.raises(ValueError, match="比例"):
             calculate_grid_layout(4, aspect_ratio)
 
-    def test_impossible_canvas_fails_without_changing_frame_ratio(self):
+    @pytest.mark.parametrize(("count", "aspect_ratio"), [(1, "1:4"), (3, "4:1"), (9, "100:1")])
+    def test_impossible_canvas_fails_without_changing_frame_ratio(self, count, aspect_ratio):
         with pytest.raises(ValueError, match="逐张生成"):
-            calculate_grid_layout(9, "100:1")
+            calculate_grid_layout(count, aspect_ratio)
 
     @pytest.mark.parametrize("count", [1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 17, 25])
     @pytest.mark.parametrize("portrait", ["9:16", "3:4", "2:3"])
@@ -85,9 +90,9 @@ class TestPlanGridChunks:
         ("count", "large", "expected"),
         [
             (7, False, [(7, 2, 4, 1)]),
-            (12, False, [(9, 3, 3, 0), (3, 1, 3, 0)]),
+            (12, False, [(9, 3, 3, 0), (3, 2, 2, 1)]),
             (12, True, [(12, 3, 4, 0)]),
-            (19, False, [(9, 3, 3, 0), (9, 3, 3, 0), (1, 1, 1, 0)]),
+            (19, False, [(9, 3, 3, 0), (9, 3, 3, 0), (1, 2, 2, 3)]),
             (30, True, [(25, 5, 5, 0), (5, 1, 5, 0)]),
         ],
     )

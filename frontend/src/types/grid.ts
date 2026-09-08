@@ -69,7 +69,7 @@ export interface GridGeneration {
   cols: number;
   cell_count: number;
   frame_chain: FrameCell[];
-  /** 联合图生命周期：completed 仅表示联合图就绪，是否已落格由 split_at 表达 */
+  /** completed 仅表示联合图生成完成；正式首帧是否可用以 readiness 为准。 */
   status: "pending" | "generating" | "completed" | "failed";
   prompt: string | null;
   provider: string;
@@ -81,4 +81,10 @@ export interface GridGeneration {
   reference_images?: ReferenceImage[] | null;
   /** 最近一次按当前联合图切分落格的时间；联合图内容变更（重生成/上传/还原）后为 null */
   split_at: string | null;
+  readiness?: {
+    image_exists: boolean;
+    geometry_valid: boolean | null;
+    issues: string[];
+    ready_scene_ids: string[];
+  };
 }

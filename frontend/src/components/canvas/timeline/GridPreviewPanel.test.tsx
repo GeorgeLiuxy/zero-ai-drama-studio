@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API } from "@/api";
 import { useAppStore } from "@/stores/app-store";
@@ -47,6 +47,8 @@ function makeGrid(overrides: Partial<GridGeneration> = {}): GridGeneration {
     created_at: "2026-07-16T00:00:00Z",
     error_message: null,
     split_at: "2026-07-16T00:10:00Z",
+    video_aspect_ratio: "9:16",
+    readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: ["SCN-1"] },
     ...overrides,
   };
 }
@@ -94,7 +96,7 @@ describe("GridPreviewPanel regenerate", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const regenBtn = await screen.findByText("重新生成");
+    const regenBtn = await screen.findByText("重新生成当前图");
     fireEvent.click(regenBtn);
 
     await waitFor(() => {
@@ -113,7 +115,7 @@ describe("GridPreviewPanel regenerate", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const regenBtn = await screen.findByText("重新生成");
+    const regenBtn = await screen.findByText("重新生成当前图");
     fireEvent.click(regenBtn);
 
     await waitFor(() => {
@@ -132,7 +134,7 @@ describe("GridPreviewPanel occupancy", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    await screen.findByText("重新生成");
+    await screen.findByText("重新生成当前图");
 
     useTasksStore.setState({ tasks: [makeTask({ status: "running" })] });
 
@@ -148,7 +150,7 @@ describe("GridPreviewPanel occupancy", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const regenBtn = await screen.findByText("重新生成");
+    const regenBtn = await screen.findByText("重新生成当前图");
     expect(regenBtn).toBeEnabled();
 
     useTasksStore.setState({ tasks: [makeTask({ status: "running" })] });
@@ -160,7 +162,7 @@ describe("GridPreviewPanel occupancy", () => {
     });
     expect(regenerateSpy).not.toHaveBeenCalled();
     // 拒绝提示不得替换面板内容：宫格图与重新生成按钮仍在
-    expect(screen.getByText("重新生成")).toBeInTheDocument();
+    expect(screen.getByText("重新生成当前图")).toBeInTheDocument();
   });
 });
 
@@ -168,8 +170,10 @@ describe("GridPreviewPanel split", () => {
   beforeEach(() => {
     vi.spyOn(API, "getGridSplitPreview").mockResolvedValue(makeSplitPreview());
   });
-  it("切分成功后应用指纹、更新 split_at 并弹成功提示；跳过的分镜另弹警示", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+  it("切分成功后应用指纹并重拉正式首帧状态；跳过的分镜另弹警示", async () => {
+    vi.spyOn(API, "getGrid")
+      .mockResolvedValueOnce(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }))
+      .mockResolvedValue(makeGrid());
     const { useProjectsStore } = await import("@/stores/projects-store");
     vi.spyOn(API, "splitGrid").mockResolvedValue({
       success: true,
@@ -181,7 +185,7 @@ describe("GridPreviewPanel split", () => {
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const splitBtn = await screen.findByText("预览切分");
+    const splitBtn = await screen.findByText("预览切分当前图");
     fireEvent.click(splitBtn);
     expect(await screen.findByRole("img", { name: "第 1 格 · SCN-1" })).toHaveAttribute("src", "data:image/png;base64,AA==");
     expect(API.splitGrid).not.toHaveBeenCalled();
@@ -194,11 +198,12 @@ describe("GridPreviewPanel split", () => {
       expect(useAppStore.getState().toast?.text).toContain("SCN-9");
     });
     // 切分完成后「未切分」提示消失
-    expect(screen.queryByText("未切分")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("首帧待检查或确认")).not.toBeInTheDocument());
+    expect(screen.getByText(/首帧已就绪 1\/1/)).toBeInTheDocument();
   });
 
   it("无跳过分镜时切分成功提示展示落格格数", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     vi.spyOn(API, "splitGrid").mockResolvedValue({
       success: true,
       split_at: "2026-07-16T01:00:00Z",
@@ -208,7 +213,7 @@ describe("GridPreviewPanel split", () => {
     });
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    fireEvent.click(await screen.findByText("预览切分"));
+    fireEvent.click(await screen.findByText("预览切分当前图"));
     fireEvent.click(await screen.findByText("已逐格确认，写入首帧"));
 
     await waitFor(() => {
@@ -217,27 +222,27 @@ describe("GridPreviewPanel split", () => {
   });
 
   it("联合图就绪但未落格时展示「未切分」提示", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    expect(await screen.findByText("未切分")).toBeInTheDocument();
+    expect(await screen.findByText("首帧待检查或确认")).toBeInTheDocument();
   });
 
   it("生成在途时切分按钮禁用", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     useTasksStore.setState({ tasks: [makeTask()], optimisticActive: new Set() });
 
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
 
-    const splitBtn = (await screen.findByText("预览切分")).closest("button");
+    const splitBtn = (await screen.findByText("预览切分当前图")).closest("button");
     expect(splitBtn?.disabled).toBe(true);
   });
 
   it("尺寸或分割检查失败时保留真实切片预览并阻止写入", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     vi.mocked(API.getGridSplitPreview).mockResolvedValue(makeSplitPreview({ valid: false, issues: ["unexpected_horizontal_separator"] }));
     const split = vi.spyOn(API, "splitGrid");
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    fireEvent.click(await screen.findByText("预览切分"));
+    fireEvent.click(await screen.findByText("预览切分当前图"));
     expect(await screen.findByText("已逐格确认，写入首帧")).toBeDisabled();
     expect(screen.getByText(/检测到偏离等分边界的横向分割线/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "第 1 格 · SCN-1" })).toBeInTheDocument();
@@ -245,20 +250,20 @@ describe("GridPreviewPanel split", () => {
   });
 
   it("原图更新后移除旧预览，重新预览才可确认", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    fireEvent.click(await screen.findByText("预览切分"));
+    fireEvent.click(await screen.findByText("预览切分当前图"));
     expect(await screen.findByText("已逐格确认，写入首帧")).toBeEnabled();
     useAppStore.getState().invalidateGrids();
     await waitFor(() => expect(screen.queryByText("已逐格确认，写入首帧")).not.toBeInTheDocument());
-    expect(screen.getByText("预览切分")).toBeEnabled();
+    expect(screen.getByText("预览切分当前图")).toBeEnabled();
   });
 
   it("低像素单格明确提示放大不能补回细节，并展示统一输出比例", async () => {
     vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid());
     vi.mocked(API.getGridSplitPreview).mockResolvedValue(makeSplitPreview({ cell_width: 288, cell_height: 512 }));
     render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
-    fireEvent.click(await screen.findByText("预览切分"));
+    fireEvent.click(await screen.findByText("预览切分当前图"));
     expect(await screen.findByText(/放大不能补回细节/)).toBeInTheDocument();
     expect(screen.getByText(/统一首帧 576×1024（9:16）/)).toBeInTheDocument();
   });
@@ -266,7 +271,7 @@ describe("GridPreviewPanel split", () => {
 
 describe("GridPreviewPanel upload", () => {
   it("选择文件后上传联合图：应用指纹、触发 grids 失效重拉并弹成功提示", async () => {
-    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null }));
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ split_at: null, readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: [] } }));
     const { useProjectsStore } = await import("@/stores/projects-store");
     vi.spyOn(API, "uploadGridImage").mockResolvedValue({
       success: true,
@@ -296,6 +301,40 @@ describe("GridPreviewPanel upload", () => {
 });
 
 describe("GridPreviewPanel 版本时光机跨宫格切换", () => {
+  it("离开后切回同一张图，之前未完成的预览响应也不能恢复为可确认状态", async () => {
+    let finishPreview: (value: GridSplitPreview) => void = () => {};
+    vi.spyOn(API, "getGrid").mockImplementation(async (_project, id) => makeGrid({ id }));
+    vi.spyOn(API, "getGridSplitPreview").mockImplementation(async () => new Promise((resolve) => { finishPreview = resolve; }));
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1", "grid-2"]} defaultExpanded />);
+    fireEvent.click(await screen.findByRole("button", { name: "预览切分当前图" }));
+    expect(screen.getByText("生成切片预览中…")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "第 2 张" }));
+    expect(await screen.findByText(/当前第 2\/2 张/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "第 1 张" }));
+    expect(await screen.findByText(/当前第 1\/2 张/)).toBeInTheDocument();
+    await act(async () => { finishPreview(makeSplitPreview()); });
+    expect(screen.getByRole("button", { name: "预览切分当前图" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "已逐格确认，写入首帧" })).not.toBeInTheDocument();
+  });
+
+  it("历史布局与当前 2×2 方案不同仅提示再生规则，不否定已经审核通过的正式首帧", async () => {
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ rows: 1, cols: 3, cell_count: 3, scene_ids: ["SCN-1", "SCN-2", "SCN-3"], readiness: { image_exists: true, geometry_valid: true, issues: [], ready_scene_ids: ["SCN-1", "SCN-2", "SCN-3"] } }));
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded videoAspectRatio="9:16" layouts={[{ scene_count: 3, grid_size: "2x2", rows: 2, cols: 2, cell_count: 4, placeholder_count: 1, grid_aspect_ratio: "9:16" }]} />);
+    expect(await screen.findByText(/当前图保留原记录布局；上方是按当前设置重新生成整组的方案/)).toBeInTheDocument();
+    expect(screen.getByText(/当前图记录：3 个分镜 · 1 行 × 3 列.*联合图要求 27:16/)).toBeInTheDocument();
+    expect(screen.getByText(/首帧已就绪 3\/3/)).toBeInTheDocument();
+    expect(screen.queryByText(/当前联合图不符合尺寸或分割要求/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "预览切分当前图" })).toBeEnabled();
+  });
+
+  it("生成记录完成但联合图文件缺失时明确提示，不能只显示待审核", async () => {
+    vi.spyOn(API, "getGrid").mockResolvedValue(makeGrid({ readiness: { image_exists: false, geometry_valid: null, issues: [], ready_scene_ids: [] } }));
+    render(<GridPreviewPanel projectName="demo" gridIds={["grid-1"]} defaultExpanded />);
+    expect(await screen.findByText("当前联合图文件已缺失，请重新生成当前图或上传图片。")).toBeInTheDocument();
+    expect(screen.queryByText("首帧待检查或确认")).not.toBeInTheDocument();
+    expect(screen.getByText(/首帧已就绪 0\/1/)).toBeInTheDocument();
+  });
+
   it("切换宫格清空旧数据卸载版本时光机，上一张在途的版本列表响应不落进新宫格的面板", async () => {
     const version = (v: number) => ({
       version: v,
@@ -322,7 +361,7 @@ describe("GridPreviewPanel 版本时光机跨宫格切换", () => {
     // 保护来自切换时的 setGrid(null) 卸载，改成加载期间留旧数据渲染即回归
     fireEvent.click(await screen.findByLabelText("版本"));
     await waitFor(() => expect(API.getVersions).toHaveBeenCalledWith("demo", "grids", "grid-1"));
-    fireEvent.click(screen.getByText("2"));
+    fireEvent.click(screen.getByText("第 2 张"));
     fireEvent.click(await screen.findByLabelText("版本"));
     await waitFor(() => expect(screen.getByText("v3")).toBeInTheDocument());
 
