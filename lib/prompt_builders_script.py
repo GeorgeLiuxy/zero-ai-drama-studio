@@ -9,9 +9,12 @@
 - 节奏建议由 lib.prompt_rules.episode_pacing 注入，跨子智能体与 builder 共享。
 """
 
+import json
+
 from lib.prompt_rules.asset_appearance import asset_reference_names, iter_asset_appearances
 from lib.prompt_rules.episode_pacing import render_pacing_section
 from lib.prompt_rules.episode_target_duration import render_episode_target_duration_rule
+from lib.shot_continuity import CONTINUITY_PLANNING_RULES
 from lib.speech_rate import speech_rate_units_per_second
 from lib.text_metrics import reading_unit_noun
 
@@ -411,6 +414,8 @@ def render_drama_content_for_prompt_authoring(content_scenes: list) -> str:
         )
         scene_desc = _neutralize_tags(str(scene.get("scene_description") or "（无）")).replace("\n", "\n  ")
         lines.append(f"视觉改编：{scene_desc}")
+        if scene.get("continuity") is not None:
+            lines.append("已定衔接状态：" + _neutralize_tags(json.dumps(scene["continuity"], ensure_ascii=False)))
         raw_utterances = scene.get("utterances")
         utterances = raw_utterances if isinstance(raw_utterances, list) else []
         if utterances:
@@ -512,6 +517,12 @@ def build_drama_prompt(
 # 字段写作指引
 
 对每个分镜，按下列章节填写视觉字段。
+
+若内容带 continuity，image_prompt 精确呈现 start_state；video_prompt.action 展开 action_beats，
+在本镜时长内到达 end_state。camera_motion 服从机位侧和转场依据。
+床、门、墙等固定锚点不能因换景别互换；画面左右与场景世界坐标不同。
+同场景切镜保持状态，只有明确 continuous_action 才按连续运动衔接，不自动绑定下一镜为尾帧。
+衔接参考中的邻镜仅供理解，不输出、不改写未选中的镜头；不改变已定台词和时长。
 
 ## 图片提示词（image_prompt）——切换到「摄影师」视角
 
@@ -688,6 +699,8 @@ def build_normalize_prompt(
 {outline_block}# 字段写作指引
 
 把源文拆为有序分镜，逐条产出结构化分镜内容。当前正在生成第 {episode} 集。
+
+{CONTINUITY_PLANNING_RULES}
 
 ## 基础字段
 

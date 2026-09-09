@@ -13,6 +13,7 @@ from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Fie
 from pydantic.json_schema import SkipJsonSchema
 
 from lib.script_skeleton import resolve_declared_kind
+from lib.shot_continuity import ShotContinuity
 
 # 所有剧本模型默认禁止额外字段:Agent 的 `patch_episode_script` 通过 `_set_nested` 允许在
 # dict 上凭空创建叶子(为了让 Agent 补 LLM 漏写的 optional 字段);若 Pydantic 走默认
@@ -437,6 +438,12 @@ class DramaScene(BaseModel):
 
     model_config = _STRICT_CONFIG
 
+    continuity: ShotContinuity | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="本镜起止状态与前后镜衔接；存量未规划镜头可为空",
+    )
+
     # 已废弃但存量 JSON 里可能残留的字段:在 extra="forbid" 拒绝之前显式 pop 掉,
     # 与「未知字段(typo / hallucination)一律拒」并存——前者是已知 deprecated,
     # 后者才是 forbid 想挡的真问题。新增 deprecate 字段时把名字加到这个集合。
@@ -579,6 +586,10 @@ class DramaSceneContent(BaseModel):
     """
 
     model_config = _STRICT_CONFIG
+
+    continuity: ShotContinuity | None = Field(
+        default=None, exclude_if=lambda value: value is None, description="逐镜起止状态、动作顺序、固定场景关系与机位侧"
+    )
 
     scene_id: str = Field(min_length=1, description="分镜 ID，格式 E{集}S{序号} 或 E{集}S{序号}_{子序号}")
     duration_seconds: int = Field(default=8, ge=1, le=60, description="分镜时长（秒）")

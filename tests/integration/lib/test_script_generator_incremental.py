@@ -609,7 +609,13 @@ class TestDryRunPrompt:
 
         first_needle, second_needle = variant.prompt_needles
         assert second_needle in prompt
-        assert first_needle not in prompt
+        if variant is DRAMA:
+            target_block = prompt.split("<shots>", 1)[1].split("</shots>", 1)[0]
+            assert first_needle not in target_block
+            assert second_needle in target_block
+            assert first_needle in prompt.split("<continuity_context>", 1)[1]
+        else:
+            assert first_needle not in prompt
 
     async def test_prompt_says_so_when_nothing_is_outdated(self, tmp_path: Path, variant: _Variant) -> None:
         first, second = variant.entry_ids

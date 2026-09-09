@@ -81,6 +81,7 @@ def build_grid_prompt(
     aspect_ratio: str = "16:9",
     grid_aspect_ratio: str | None = None,
     reference_image_mapping: dict[str, str] | None = None,
+    continuity_reference: str = "",
 ) -> str:
     """Assemble one static first-frame image per scene in a fixed equal-cell grid.
 
@@ -163,6 +164,12 @@ def build_grid_prompt(
             lines.append(f"格{cell_idx}（{position}）— 空占位：纯灰色背景，无任何内容")
 
     lines.append("")
+
+    lines.append("【同场景连续性】同一场景保持人物服装、床门窗墙等固定布置一致；换景别不等于移动家具。")
+    lines.append("除非分镜明确要求换机位，沿用场景轴线与人物朝向；每格只画该分镜开始时的状态。")
+    if continuity_reference:
+        lines.append("【跨图衔接】固定床、门、墙的世界关系与机位侧；画面左右不等于世界位置。")
+        lines.append(continuity_reference)
 
     # Style requirements
     lines.append("【风格要求】")

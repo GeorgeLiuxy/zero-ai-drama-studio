@@ -167,6 +167,7 @@ def project_video_basis_components(
             raise ValueError(f"storyboard inputs are unavailable: {exc}") from exc
         visual = build_storyboard_video_artifact_visual_basis(
             resource_id=resource_id,
+            continuity=item.get("continuity"),
             visual_prompt=prompt,
             storyboard_image=storyboard,
             end_frame_image=end_frame,

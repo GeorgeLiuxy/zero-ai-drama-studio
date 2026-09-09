@@ -1,0 +1,271 @@
+{
+  "$defs": {
+    "ContinuityFact": {
+      "additionalProperties": false,
+      "properties": {
+        "subject": {
+          "description": "角色、道具或固定场景锚点的稳定名称；相邻镜沿用同名",
+          "minLength": 1,
+          "title": "Subject",
+          "type": "string"
+        },
+        "attribute": {
+          "enum": [
+            "pose",
+            "world_position",
+            "facing",
+            "holding",
+            "condition",
+            "layout",
+            "screen_position"
+          ],
+          "title": "Attribute",
+          "type": "string"
+        },
+        "value": {
+          "description": "简短状态值；未变化时逐字沿用，无法确定填 unknown；世界位置不使用画面左右",
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "attribute",
+        "value"
+      ],
+      "title": "ContinuityFact",
+      "type": "object"
+    },
+    "DramaSceneContent": {
+      "additionalProperties": false,
+      "properties": {
+        "continuity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShotContinuity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "逐镜起止状态、动作顺序、固定场景关系与机位侧"
+        },
+        "scene_id": {
+          "description": "分镜 ID，格式 E{集}S{序号} 或 E{集}S{序号}_{子序号}",
+          "minLength": 1,
+          "title": "Scene Id",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "description": "分镜时长（秒），必须取 supported_durations 中的值",
+          "enum": [
+            5,
+            8,
+            10,
+            12
+          ],
+          "title": "Duration Seconds",
+          "type": "integer"
+        },
+        "segment_break": {
+          "default": false,
+          "description": "是否为场景切换点",
+          "title": "Segment Break",
+          "type": "boolean"
+        },
+        "characters_in_scene": {
+          "description": "出场角色名称列表",
+          "items": {
+            "type": "string"
+          },
+          "title": "Characters In Scene",
+          "type": "array"
+        },
+        "scenes": {
+          "description": "出场场景名称列表",
+          "items": {
+            "type": "string"
+          },
+          "title": "Scenes",
+          "type": "array"
+        },
+        "props": {
+          "description": "出场道具名称列表",
+          "items": {
+            "type": "string"
+          },
+          "title": "Props",
+          "type": "array"
+        },
+        "scene_description": {
+          "description": "分镜视觉改编描述（自由文本，仅承载视觉内容，供 prompt_authoring 生成视觉层）",
+          "title": "Scene Description",
+          "type": "string"
+        },
+        "utterances": {
+          "description": "分镜级有序发声序列：角色台词（dialogue）与画外音（voiceover）按时序排列，逐字保留",
+          "items": {
+            "$ref": "#/$defs/Utterance"
+          },
+          "title": "Utterances",
+          "type": "array"
+        },
+        "source_text": {
+          "default": "",
+          "description": "逐字原文摘录（追溯锚，不朗读、不出音，best-effort）",
+          "title": "Source Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scene_id",
+        "duration_seconds",
+        "characters_in_scene",
+        "scene_description"
+      ],
+      "title": "DramaSceneContent",
+      "type": "object"
+    },
+    "ShotContinuity": {
+      "additionalProperties": false,
+      "properties": {
+        "scene_group": {
+          "description": "同一时空段落的稳定 ID，与宫格分批无关",
+          "minLength": 1,
+          "title": "Scene Group",
+          "type": "string"
+        },
+        "incoming_transition": {
+          "enum": [
+            "scene_start",
+            "continuous_action",
+            "same_scene_cut",
+            "time_jump",
+            "scene_change"
+          ],
+          "title": "Incoming Transition",
+          "type": "string"
+        },
+        "transition_reason": {
+          "default": "",
+          "description": "换时空、跨轴线或改变机位时的叙事与空间依据",
+          "title": "Transition Reason",
+          "type": "string"
+        },
+        "camera_side": {
+          "description": "相对于固定场景轴线的机位侧；不确定填 unknown",
+          "minLength": 1,
+          "title": "Camera Side",
+          "type": "string"
+        },
+        "start_state": {
+          "description": "本镜首帧时的角色姿态、空间与道具状态",
+          "items": {
+            "$ref": "#/$defs/ContinuityFact"
+          },
+          "minItems": 1,
+          "title": "Start State",
+          "type": "array"
+        },
+        "end_state": {
+          "description": "本镜动作结束后的状态，下镜据此承接",
+          "items": {
+            "$ref": "#/$defs/ContinuityFact"
+          },
+          "minItems": 1,
+          "title": "End State",
+          "type": "array"
+        },
+        "action_beats": {
+          "description": "按发生顺序写可观察动作；静止镜头明确写保持状态",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Action Beats",
+          "type": "array"
+        },
+        "uncertainties": {
+          "description": "无法从剧本确定且影响衔接的问题，不能编造答案",
+          "items": {
+            "type": "string"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "scene_group",
+        "incoming_transition",
+        "camera_side",
+        "start_state",
+        "end_state",
+        "action_beats"
+      ],
+      "title": "ShotContinuity",
+      "type": "object"
+    },
+    "Utterance": {
+      "additionalProperties": false,
+      "description": "drama 分镜级有序发声条目：插入顺序即幕内时序（台词与画外音的先后）。\n\n判别式联合 ``{kind, speaker, text}``，``kind`` 决定下游路由与 ``kind ⇄ speaker`` 约束：\n- ``dialogue``：角色发声（对白、内心独白、角色画外解说），必带非空 ``speaker``，\n  进视频 YAML 交供应商出口型音轨；\n- ``voiceover``：无说话人的旁白解说，``speaker`` 必为 ``None``，不作视频提示词（留给字幕 / TTS）。\n\n取显式 ``kind`` 而非「speaker 有无隐式判别」：与 ``ReferenceResource.type`` 既有判别式风格一致、\nLLM 结构化输出更稳（见 ADR 0040）。",
+      "properties": {
+        "kind": {
+          "description": "发声类型：dialogue=带角色归属的角色发声、voiceover=无角色归属的叙述旁白",
+          "enum": [
+            "dialogue",
+            "voiceover"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "speaker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "说话角色名；dialogue 必填非空、voiceover 必须为 null",
+          "title": "Speaker"
+        },
+        "text": {
+          "description": "发声内容原文，逐字保留",
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "title": "Utterance",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "title": {
+      "description": "剧集标题",
+      "title": "Title",
+      "type": "string"
+    },
+    "scenes": {
+      "description": "分镜内容列表",
+      "items": {
+        "$ref": "#/$defs/DramaSceneContent"
+      },
+      "title": "Scenes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "scenes"
+  ],
+  "title": "DramaNormalizedScript",
+  "type": "object"
+}

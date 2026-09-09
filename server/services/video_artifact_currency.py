@@ -27,6 +27,7 @@ from lib.narration_delivery import TtsSynthesisSettings
 from lib.project_manager import ProjectManager, resolve_episode_script_binding
 from lib.reference_video.execution_checkpoint import NarrationExecutionFacts
 from lib.script_editor import resolve_items
+from lib.shot_continuity import strict_motion_review_enabled
 from lib.speech_artifact_provenance import (
     build_video_speech_basis,
     project_character_voice_evidence,
@@ -35,6 +36,7 @@ from lib.speech_composition import SpeechMode, SpeechPreparation
 from lib.version_manager import PaidVersionCommit, VersionManager
 from lib.video_artifact_commit import commit_paid_video_artifact
 from lib.video_artifact_facts import VIDEO_ARTIFACT_RESTORE_BLOCKER_FIELD, VideoArtifactCurrencyFacts
+from server.services.motion_planning import review_task_motion
 from server.services.narration_delivery_tasks import (
     CurrentTtsSettingsResolver,
     validate_generated_video_covers_tts_duration,
@@ -148,6 +150,20 @@ class VideoArtifactCommitter:
             )
             await run_noninterruptible_async(guard.__aenter__())
             self._admission_guard = guard
+
+        execution_task_id = version_metadata.get("execution_task_id")
+        if strict_motion_review_enabled() and isinstance(execution_task_id, str) and execution_task_id:
+            try:
+                await review_task_motion(
+                    project_path=self._project_path,
+                    project_name=self._project_name,
+                    task_id=execution_task_id,
+                    video=staged_file,
+                )
+            except (Exception, asyncio.CancelledError) as exc:
+                self.selection_error = exc
+                self._restore_blocker = "motion_output_review_required"
+                return
 
         raw_narration = version_metadata.get("execution_narration")
         if not isinstance(raw_narration, Mapping) or raw_narration.get("delivery") != "use_tts":

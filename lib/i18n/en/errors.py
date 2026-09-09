@@ -1,4 +1,8 @@
 MESSAGES = {
+    "motion_plan_review_required": "Frame motion and spatial continuity need review; video generation has not been submitted: {details}",
+    "motion_output_review_required": "Sampled video review failed. The result is kept in history without becoming the current video: {details}",
+    "motion_requires_vision": "Motion continuity review requires a script model that supports image input. Check the model configuration.",
+    "motion_duration_insufficient": "The action needs at least {required} seconds, but only {available} seconds are available. Split or replan the shot.",
     "codex_history_unavailable": "The original conversation runtime could not be recovered. Create a new conversation to use Codex.",
     "codex_unavailable": "Cannot start Codex. Check its installation or ARCREEL_CODEX_BIN.",
     "codex_cancelled": "The Codex task was cancelled.",

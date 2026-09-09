@@ -1,0 +1,696 @@
+{
+  "scope": "current reconstruction, not historical request",
+  "default_duration": null,
+  "supported_durations": [
+    5,
+    8,
+    10,
+    12
+  ],
+  "source_kind": "novel",
+  "target_duration": 120,
+  "prompt_characters": 5754,
+  "inputs": {
+    "episode": 2,
+    "project_overview": {
+      "synopsis": "女主沈明微前世贵为皇后，却被皇帝萧承煜猜忌利用，父兄与北境将士因断粮而死，自己也被毒杀冷宫。重生后，她不再做顺从棋子，先查内库账目、稳住家族与北境军粮，再联手太后、宁王、太傅与御史揭开朝廷以凤印、假账和缓发军粮构陷沈家的阴谋。太庙对峙后，萧承煜失势被废，幼帝即位，沈明微辅政整饬吏治、抚恤亡者、修复军粮制度，并最终等到归来的父亲与真正的家人团圆。",
+      "genre": "古装重生权谋",
+      "theme": "复仇与自救，亲情守护，权力制衡与责任",
+      "world_setting": "架空大胤王朝，宫廷与边关并重。朝中围绕皇权、外戚、宗正、都察院、北衙与内卫展开博弈，北境战事牵动军粮、漕运、仓储与兵权。宫廷礼制森严，后宫账册、凤印与军需文书成为权力争夺的关键。"
+    },
+    "characters": {
+      "沈宁": {
+        "description": "女性，约28岁，雨夜将木盒送到修复店的陌生访客。东亚面孔，身形修长匀称，鹅蛋脸，细直眉，杏眼，鼻梁挺直，自然淡妆。黑色中分齐肩短发，发尾略向外弯。固定穿浅卡其色中长款风衣，双排深色纽扣，敞开穿着；内搭黑色高领针织衫，下穿深灰色直筒长裤、黑色低跟短靴。配饰低调，不戴眼镜，不携带固定包袋。气质冷静、疏离，目光带有警惕感，表情和肢体动作克制。参考状态为自然站立，双手不持木盒或其他道具。",
+        "voice_style": "青年女性声线，中音略偏低，音色清晰、冷静，带少量自然气息感，但不刻意耳语。标准普通话，语速适中，说话简短明确，句间停顿清楚。日常语气疏离而平稳，警告时降低音量、加强重音，不使用尖锐或夸张的反派语调。采用自然影视对白感，避免甜腻、撒娇和机械朗读。",
+        "character_sheet": "characters/沈宁.png",
+        "derivatives": {}
+      },
+      "林砚": {
+        "description": "男性，约32岁，旧物修复店店主。东亚面孔，体型清瘦，肩背挺直，偏长脸，眉毛平直，鼻梁挺直，下颌轮廓清晰，无胡须。黑色短发，自然侧分，额前少量碎发。固定穿深灰色圆领长袖上衣，袖口挽至前臂，外穿暗棕色旧帆布围裙，围裙带胸前口袋和腰部系带，长度至膝盖上方；下穿黑色直筒长裤、深棕色系带皮鞋。不戴眼镜或明显首饰。气质沉稳、内敛，略带疲惫，观察事物时专注警觉。参考状态为自然站立、双手垂于身体两侧，不固定手持道具。",
+        "voice_style": "成熟青年男性声线，中低音，音色自然厚实，略带轻微颗粒感。标准普通话，吐字清楚，语速中等偏慢，停顿自然。日常说话沉稳克制，不刻意压低嗓音；疑惑时语速略缓，紧张时声音收紧，但不突然变成夸张的喊叫。采用真实生活对话感，避免播音腔、过重气泡音和刻意的霸总腔。",
+        "character_sheet": "characters/林砚.png",
+        "derivatives": {}
+      },
+      "沈明微": {
+        "description": "女主，沈家嫡女，昵称“威威”，大胤皇后。前世做了七年贤后后被废入冷宫、亲族因北境断粮案覆灭，饮毒酒而亡；重生回大婚前夜后变得冷静决断，不再盲信皇帝，围绕账册、军粮、凤印和兵符自救复仇，守护父母、兄长、北境军民与萧宁。外在为古装皇后/太后形象，气质从压抑悲怆转为克制锋利。",
+        "character_sheet": "characters/沈明微.png",
+        "voice_style": "青年女性声线，中音，清晰克制；内心旁白有悲怆与清醒感，对峙时稳而有压迫力。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "萧承煜": {
+        "description": "大胤皇帝，沈明微的丈夫。外表温和端正，实际多疑冷酷，忌惮沈家兵权，以缓发北境军粮、逼交兵符、构陷皇后与沈家为手段维护皇权，前世导致沈家覆灭和女主冷宫惨死。",
+        "character_sheet": "characters/萧承煜.png",
+        "voice_style": "成熟男性中低音，表面温和从容，涉及权谋时冷硬压迫，怒时克制而危险。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "沈靖": {
+        "description": "沈明微之父，沈家家主、北境老将/侯爷，驻守北境多年，爱女深沉，教女骑马认地图，重生线中支持女儿筹粮与保存证据，最终在换防后交出兵符归京。身上有旧刀疤，后期历经边关战事显得瘦削沧桑。",
+        "character_sheet": "characters/沈靖.png",
+        "voice_style": "中老年男性低音，爽朗粗粝，护女时温柔坚定，谈军务时沉稳果断。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "沈夫人": {
+        "description": "沈明微的母亲，温柔细致，曾亲手为女儿缝衣绣燕。重生后察觉女儿异样，进宫陪伴时暗中带入沈靖查到的军需线索，是女主亲情与家族羁绊的重要支点。",
+        "character_sheet": "characters/沈夫人.png",
+        "voice_style": "中年女性温和声线，细腻关切，关键时压低声音保持镇定。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "沈家兄长": {
+        "description": "沈明微的兄长，沈家青年将领/家人，前世随父守断粮孤城而死；重生前期在侯府与嫁妆、弓箭等场景中出现，支持北境事务，体现沈家对女主的保护。",
+        "character_sheet": "characters/沈家兄长.png",
+        "voice_style": "青年男性声线，爽朗直接，带军中利落感。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "青杏": {
+        "description": "沈明微贴身侍女，忠心机敏。前世为冷宫中的女主偷送炭受刑，重生后协助女主梳妆、传递消息，并冒险押送粮契与粮车北上，遇山洪和流民抢粮后重伤归来。",
+        "character_sheet": "characters/青杏.png",
+        "voice_style": "青年女性声线，清亮灵动，忠诚爽快，重伤后虚弱但坚韧。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "萧宁": {
+        "description": "皇长子，徐婉之子，七岁左右，瘦小谨慎，常抱破布老虎。被送入凤仪宫牵制皇后，后受到沈明微保护与教养；在权力斗争中曾被皇帝当作筹码，最终登基为幼帝。",
+        "character_sheet": "characters/萧宁.png",
+        "voice_style": "儿童男声，怯生生但认真，信任女主后语气更依赖温暖。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "徐婉": {
+        "description": "萧宁的生母，原东宫侍女，后为才人，住含露院。性格怯弱但爱子，懂针工布料和账目细节，向沈明微交出宫中旧布报废与供货商线索，推动军需案。",
+        "character_sheet": "characters/徐婉.png",
+        "voice_style": "青年女性轻声细语，常带怯意，谈到孩子和证据时逐渐坚定。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "太后": {
+        "description": "寿安宫太后，皇帝之母，威严老练。最初以旧例与账册试探沈明微，后意识到军粮案牵动国本，在母子私情与天下责任之间艰难权衡，成为开仓查案和制衡皇帝的重要力量。",
+        "character_sheet": "characters/太后.png",
+        "voice_style": "老年女性低缓威严，语气克制，关键抉择时疲惫但坚定。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "顾闻洲": {
+        "description": "太傅/朝中重臣，正直稳重，在军粮案中连上奏疏，请求开仓核验，代表朝堂中愿意按制度查证的一派力量。",
+        "character_sheet": "characters/顾闻洲.png",
+        "voice_style": "中老年男性沉稳端正，朝堂发言清晰有分量。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "陆尚书": {
+        "description": "户部尚书，粮商背后靠山，与北境军粮、冬衣、仓粮账目牵连。面对皇后查账反咬沈家和后宫干政，是构陷沈家的朝堂关键反派之一。",
+        "character_sheet": "characters/陆尚书.png",
+        "voice_style": "中年男性官腔，文雅而阴冷，弹劾时咄咄逼人。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "王总管": {
+        "description": "内务总管/宫中账册经手人，笑面迎账，涉及六宫亏空、病故宫人冒领月例和旧布报废外送，是女主查账初期牵出的内廷线索人物。",
+        "character_sheet": "characters/王总管.png",
+        "voice_style": "中年男性偏尖细，表面恭顺圆滑，被追问时慌张。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "宁王": {
+        "description": "皇叔/宗亲重臣，掌握宗正府或京卫力量。起初不愿替外戚争权，后因北风关军情与国门安危介入，协助救粮、护住萧宁，并在万寿大典后稳住京城局势。",
+        "character_sheet": "characters/宁王.png",
+        "voice_style": "成熟男性低音，沉着威严，不轻易表态，关键时简短有力。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "裴砚": {
+        "description": "查案官员/御史或大理寺官，负责追查清河仓、假签收凭证、封仓手谕和证人，万寿大典上带证据出列，后带伤整理案卷，推动军粮案落地。",
+        "character_sheet": "characters/裴砚.png",
+        "voice_style": "青年到成熟男性中音，冷静干练，查案陈述准确简洁。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "谢柔嘉": {
+        "description": "后妃/谢氏，曾参与改账、伪造文书和构陷皇后，是皇帝准备牺牲的替罪者。发现自己也可能被灭口后交出证据，并在万寿大典中护住萧宁，结局按其罪责获免死处置。",
+        "character_sheet": "characters/谢柔嘉.png",
+        "voice_style": "青年女性柔美但带算计，恐惧时颤抖，坦白时低而清楚。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "高进": {
+        "description": "御前内侍/近侍，奉皇帝意志参与军需伪证、传递口谕和封殿，是皇权黑手的执行者，结局因烧粮、伪证和侵吞军需等罪被判死。",
+        "character_sheet": "characters/高进.png",
+        "voice_style": "中年男性尖细急促，仗势时尖厉，被揭穿时慌乱。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      },
+      "阿蘅": {
+        "description": "后期陪伴沈明微的宫人/侍女，协助梳头、护送布老虎、在万寿大典中保护萧宁并受伤，后协助女主清算抚恤账册。若与前文“青杏”存在版本名差异，按原文出场名保留。",
+        "character_sheet": "characters/阿蘅.png",
+        "voice_style": "青年女性声线，克制忠诚，行动利落，情绪隐忍。",
+        "reference_image": "",
+        "reference_audio": "",
+        "voice_notice_dismissed_at": "",
+        "derivatives": {}
+      }
+    },
+    "scenes": {
+      "雨夜店门": {
+        "description": "当代中国城市老街上的旧物修复店外景，与修复店内厅属于同一地点。面对店铺时，左侧为深棕色木框玻璃门，右侧为宽幅木框展示窗，上方有深色短檐。外墙为陈旧灰砖，门前连接狭窄石板人行道，展示窗下方放置一条矮木凳，店门附近有少量盆栽。时间为雨夜，门窗内透出暖黄色灯光，可隐约看见木质家具与旧器物。室外为灰蓝冷色，细雨落下，石板和街道路面湿润，映出克制的暖光倒影。整体安静、真实、低饱和，店门、展示窗和街道的空间关系清晰。基础场景不包含人物和车辆，无可读招牌文字。",
+        "scene_sheet": "scenes/雨夜店门.png"
+      },
+      "冷宫雪夜": {
+        "description": "前世结局的冷宫内外。漏了半边屋顶，雪落到床前并冻住薄水，屋内破败阴冷，门外内侍送毒酒，萧承煜披玄狐裘停在门槛外；氛围凄寒、孤绝，是女主死亡与重生的触发场景。",
+        "scene_sheet": "scenes/冷宫雪夜.png"
+      },
+      "沈家闺房": {
+        "description": "沈明微出嫁前夜的侯府闺房。红烛、喜帐、满床嫁衣，外间供着赐婚圣旨；父亲、母亲、兄长围绕嫁妆与出嫁相送，呈现温暖亲情与命运重启的对照。",
+        "scene_sheet": "scenes/沈家闺房.png"
+      },
+      "沈家院落": {
+        "description": "侯府院中筹备嫁妆、礼官催迎的空间，可见搬嫁妆的人、弓箭、箱笼与仪仗，连接女主与家人的告别和银票粮契北送安排。",
+        "scene_sheet": "scenes/沈家院落.png"
+      },
+      "凤仪宫": {
+        "description": "皇后中宫的主要内廷场景，包含寝殿、梳妆镜前、查账正殿与被围守的宫门。女主在此接账、审内务总管、保护萧宁、与皇帝对峙，并承受软禁压力。",
+        "scene_sheet": "scenes/凤仪宫.png"
+      },
+      "寿安宫": {
+        "description": "太后宫殿，肃穆威严。案上可摆旧账册、奏疏、军报和证据副本；太后在此试探、审视并最终与女主彻夜商议开仓救粮。",
+        "scene_sheet": "scenes/寿安宫.png"
+      },
+      "含露院": {
+        "description": "徐婉与萧宁居住的偏远宫院，清冷简朴，体现母子在宫中被忽视的处境，也可作为徐婉提供针工布料线索的背景。",
+        "scene_sheet": "scenes/含露院.png"
+      },
+      "朝堂议政殿": {
+        "description": "百官议政的朝堂空间，顾闻洲上疏请开仓核验，陆尚书弹劾皇后和沈家，形成内廷查账向外朝军粮案升级的权力场。",
+        "scene_sheet": "scenes/朝堂议政殿.png"
+      },
+      "北上粮道": {
+        "description": "京畿通往北境的粮道、怀州旧道和山路。连雨、山洪、流民抢粮、粮车翻落，青杏及沈家老兵押粮受伤，表现重生并非无代价。",
+        "scene_sheet": "scenes/北上粮道.png"
+      },
+      "北境北风关": {
+        "description": "沈靖父兄与北军驻守的边关孤城。春寒、奇寒、断粮、冬衣未至、敌骑逼关，城后有百姓，最终粮到关在，敌军退去。",
+        "scene_sheet": "scenes/北境北风关.png"
+      },
+      "清河仓": {
+        "description": "离北境数日路程的官仓，军粮实际被暂留候旨。仓内有入仓簿、封仓手谕、领运文书和假签收凭证，是揭开皇帝缓发军粮真相的核心地点。",
+        "scene_sheet": "scenes/清河仓.png"
+      },
+      "御前暖阁": {
+        "description": "皇帝处理政务与教萧宁写字的御前内室，书案、砚台、拟诏等陈设。女主在此质问军粮为何不发，皇帝以阿宁作筹码。",
+        "scene_sheet": "scenes/御前暖阁.png"
+      },
+      "承明殿万寿大典": {
+        "description": "万寿节大典所在的宏大殿宇，钟鼓齐鸣，百官山呼，御案、凤印、宗亲席、殿门与亲卫对峙构成高潮场景。裴砚、谢柔嘉、宁王在此揭证，皇帝封殿失败。",
+        "scene_sheet": "scenes/承明殿万寿大典.png"
+      },
+      "宫门雪地": {
+        "description": "结尾冬雪中的宫门内外。沈靖换防交兵符后归京，女主迎父相拥，阿宁与阿蘅在廊下相伴，雪、旧毡帽、皮革气味和温栗形成团圆收束。",
+        "scene_sheet": "scenes/宫门雪地.png"
+      },
+      "廊下炭炉": {
+        "description": "宫中廊下温暖小景，炭炉温栗，父亲为女主和阿宁剥栗子，窗外落雪，象征亲人都在屋里、重生线获得修复。",
+        "scene_sheet": "scenes/廊下炭炉.png"
+      }
+    },
+    "props": {
+      "毒酒": {
+        "description": "前世冷宫中由内侍送来的赐死酒，苦涩，触发女主死亡与重生。",
+        "prop_sheet": "props/毒酒.png"
+      },
+      "磨钝簪子": {
+        "description": "女主在冷宫中挑断袖线的旧簪，象征前世残破和无力。",
+        "prop_sheet": "props/磨钝簪子.png"
+      },
+      "绣燕旧衣": {
+        "description": "母亲亲手做的衣裳，袖上燕子误多一条腿；冷宫中被女主重新拿起，与出嫁嫁衣上的双燕形成亲情对照。",
+        "prop_sheet": "props/绣燕旧衣.png"
+      },
+      "金镯子": {
+        "description": "父亲送给女主的笨拙金镯，金子实在，急时能当钱；重生后用于表现父女亲情与筹粮决心。",
+        "prop_sheet": "props/金镯子.png"
+      },
+      "海棠步摇": {
+        "description": "新婚后萧承煜替女主簪的首饰，被女主在拒绝被操控后锁进妆匣底层。",
+        "prop_sheet": "props/海棠步摇.png"
+      },
+      "凤印": {
+        "description": "皇后执掌六宫的权力象征，也是皇帝试图让女主交出的关键物件；万寿大典上女主以交凤印为局引出军粮真相。",
+        "prop_sheet": "props/凤印.png"
+      },
+      "六宫账册": {
+        "description": "新后接掌六宫时的账册，藏有十二万两亏空、病故宫人冒领月例等问题，是女主破局的第一本账。",
+        "prop_sheet": "props/六宫账册.png"
+      },
+      "粮契银票": {
+        "description": "女主从嫁妆和私产中拆出的银票、粮契，用于提前买粮、分散商号风险并支援北境。",
+        "prop_sheet": "props/粮契银票.png"
+      },
+      "布老虎": {
+        "description": "萧宁抱着的破布老虎，一只眼睛是黑豆一只眼睛是布扣；象征孩子的脆弱、信任和女主对他的守护。",
+        "prop_sheet": "props/布老虎.png"
+      },
+      "旧布记录纸": {
+        "description": "徐婉交给女主的折小纸条，记录王总管每逢初八往宫外送旧布的日期和车数，牵出冬衣与军需供货商。",
+        "prop_sheet": "props/旧布记录纸.png"
+      },
+      "北境军报": {
+        "description": "关于北境奇寒、军粮未到、北风关被围、粮到关在和敌军退去的军情文书，推动局势升级。",
+        "prop_sheet": "props/北境军报.png"
+      },
+      "军需封存原令": {
+        "description": "父亲查到的封存原令/御前缓发军粮文书，证明北境断粮并非普通贪腐，而是御前命户部暂留。",
+        "prop_sheet": "props/军需封存原令.png"
+      },
+      "兵符": {
+        "description": "沈家北境兵权的象征，皇帝逼沈家交出的核心目标；结局由沈靖在换防妥当后交还朝廷。",
+        "prop_sheet": "props/兵符.png"
+      },
+      "清河仓簿": {
+        "description": "清河仓的入仓簿、流水簿、封仓手谕、领运文书和假签收凭证，裴砚用以证明军粮被暂留候旨。",
+        "prop_sheet": "props/清河仓簿.png"
+      },
+      "拟诏与密信底稿": {
+        "description": "皇帝准备将谢氏作为替罪者的拟诏，以及仿女主笔迹构陷她私募军资、传信父家的密信底稿，是谢柔嘉倒戈的关键证据。",
+        "prop_sheet": "props/拟诏与密信底稿.png"
+      },
+      "素金簪": {
+        "description": "万寿大典前女主选择的最寻常素金簪，搭配收紧的大袖，体现她将赴险局的克制准备。",
+        "prop_sheet": "props/素金簪.png"
+      },
+      "佩剑": {
+        "description": "承明殿封殿时皇帝夺过的近侍佩剑，女主徒手制住持剑手并受伤，标志逼宫高潮。",
+        "prop_sheet": "props/佩剑.png"
+      },
+      "栗子炭炉": {
+        "description": "热栗子和廊下小炭炉贯穿萧宁初入凤仪宫、父亲归京团圆等温暖场面，是残酷权谋中的家庭意象。",
+        "prop_sheet": "props/栗子炭炉.png"
+      }
+    },
+    "target_language": "zh",
+    "episode_target_duration": 120,
+    "episode_outline": {
+      "title": "嫁妆换粮，先救北境",
+      "hook": "切在新婚夜萧承煜一句“这里便是你的家”后，沈明微看见陆尚书进献的玉扳指；甜言背后埋着权谋暗线。",
+      "story_beats": [
+        "父亲以为沈明微怕嫁，拿糖哄她，她却追问沈家现银与产业。",
+        "沈明微提出买粮，向父兄拆解北境春寒、漕运迟滞、粮商与陆尚书牵连等隐患。",
+        "父亲没有追问消息来源，支持她用现银分散购粮，兄长也承诺北边有他。",
+        "沈明微意识到前世并非无人护她，而是她推开了家人的手。",
+        "出嫁前，她叮嘱母亲无论宫里传出什么都先信她。",
+        "嫁妆少了六箱珠宝，银票被送往北上粮道；新婚夜萧承煜安慰她，她却注意到他手上来自陆尚书的玉扳指。"
+      ],
+      "next_episode_teaser": "入宫第三日，皇帝就要她写信劝父亲交兵权。"
+    },
+    "next_episode_outline": {
+      "title": "新婚试探，凤印查账",
+      "hook": "切在太后命人搬出旧册，说明假账连太后都被借名利用；账目背后的人即将浮出水面。",
+      "story_beats": [
+        "新婚第三日，萧承煜温言提出召沈父回京享福，实则试探兵权。",
+        "沈明微不再用家书干预军务，反问臣妾一句便能调动数万兵马是否是好事。",
+        "萧承煜当晚离开，青杏察觉娘娘不似从前喜欢陛下。",
+        "沈明微接管六宫印信与内库账册，发现十二万两亏空。",
+        "她拒绝在旧账上落印，指出病故宫人仍领月例，逼总管叫写账人来。",
+        "总管搬出太后旧例压她，沈明微反请太后看账。",
+        "太后起初震怒，后被沈明微“旧账不清，新账接不起”打动，命搬来自己库房旧册，发现所谓旧例有一半并不存在。"
+      ],
+      "next_episode_teaser": "宫中送来一个孩子，皇帝想让她当母亲、学会忍。"
+    },
+    "source_language": "zh",
+    "speech_rate_override": null,
+    "source_kind": "novel",
+    "style": "精品古装真人短剧风格，专业打光，高质量电视剧质感",
+    "novel_text": "\n\n\n\n第二章　嫁妆里不装眼泪\n\n\n\n父亲以为我是怕。\n\n\n\n他从袖中掏出一块糖，已经被捂得有些化了，糖纸黏在一处，半天剥不开。\n\n\n\n我小时候怕喝药，他就用这法子哄我。\n\n\n\n如今我要嫁人了，他还是只会这一招。\n\n\n\n我接过糖，问：“爹，咱们家有多少现银？”\n\n\n\n父亲的手停了。\n\n\n\n“你在宫里学了半年规矩，就学会这个？”\n\n\n\n“先告诉我。”\n\n\n\n他报了个数。\n\n\n\n不够。\n\n\n\n我又问了田庄、铺子、母亲压箱底的首饰。\n\n\n\n父亲听到一半，终于警觉：“你欠债了？”\n\n\n\n我摇头。\n\n\n\n“我要买粮。”\n\n\n\n院外的争论停了。\n\n\n\n兄长抱着弓走进来，看看父亲，又看看我：“谁要造反？”\n\n\n\n我抓起枕头砸他。\n\n\n\n他笑着躲开。\n\n\n\n那笑声让我鼻子又酸了一回。\n\n\n\n我不敢说自己死过一次。\n\n\n\n父亲上过战场，见惯生死，却极怕我病。他若听见这些，只会连夜去请太医，再进宫求皇帝体谅。\n\n\n\n我只能将记得的事拆开说。\n\n\n\n北境春寒，漕运容易迟。户部新换的几家粮商，背后的东家与陆尚书有牵连。仓粮若出了问题，军中便会断供。\n\n\n\n这些事，有的眼下已露端倪，有的还要再过半年才会发生。\n\n\n\n我不能把它们当成已经发生的罪证。\n\n\n\n但可以买粮，可以留人，可以把原本只存一份的军需回执，抄出第二份。\n\n\n\n父亲听完，许久没有出声。\n\n\n\n他没有问我从哪里听来。\n\n\n\n只是把金镯子从床底捡出来，擦干净，放在我手中。\n\n\n\n“你娘说，这只不好看，让我重打。可金子实在，急时能当钱。”\n\n\n\n他站起来。\n\n\n\n“田不卖。田是退路。现银拿去用，粮分几处买，别叫一家商号掐住了脖子。”\n\n\n\n兄长也收了笑。\n\n\n\n“北边的事有我。你在宫里，不必事事替我们撑着。”\n\n\n\n我看着他们，突然明白了一件事。\n\n\n\n前世不是无人护我。\n\n\n\n是我把他们递过来的手，一次次推开了。\n\n\n\n次日，仪仗来迎。\n\n\n\n母亲替我戴好凤冠，又低头检查我的袖口。\n\n\n\n那上头绣着一双燕子。\n\n\n\n两只都是两条腿。\n\n\n\n我握住她的手，不肯松。\n\n\n\n母亲笑我：“都要做皇后了，怎么反而黏人？”\n\n\n\n“娘，”我说，“往后无论宫里传出什么话，你都先信我。”\n\n\n\n她的笑慢慢收了。\n\n\n\n“是出了什么事？”\n\n\n\n院外礼官催了第三遍。\n\n\n\n我来不及解释，只能把她的手放到自己脸上，像小时候受委屈那样，轻轻蹭了一下。\n\n\n\n“等我回家，再告诉你。”\n\n\n\n那日，我的嫁妆少了六箱珠宝。\n\n\n\n多出来的银票，被分作几份，送往北上的粮道。\n\n\n\n萧承煜掀起盖头时，看见我眼眶发红，笑着替我擦了擦。\n\n\n\n“舍不得家？”\n\n\n\n我垂眼，避开他的手。\n\n\n\n“嗯。”\n\n\n\n“往后这里便是你的家。”\n\n\n\n前世听见这句话，我欢喜了很久。\n\n\n\n如今，我只看见他手指上的玉扳指。\n\n\n\n玉质很好。\n\n\n\n是陆尚书进的。",
+    "default_duration": null,
+    "supported_durations": [
+      5,
+      8,
+      10,
+      12
+    ]
+  },
+  "scenes": [
+    {
+      "scene_id": "E2S01",
+      "plan_duration": 5,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "父亲以为我是怕。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "烛火摇晃的闺房内，沈靖站在床边，袖口半垂，掌心捏着一块糖，神情笨拙又担忧；沈明微坐在榻沿，眼眶微红却目光沉静，伸手接过糖，没有哭嫁的软弱，反而直直望向父亲。"
+    },
+    {
+      "scene_id": "E2S02",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "爹，咱们家有多少现银？"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈靖",
+          "text": "你在宫里学了半年规矩，就学会这个？"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "先告诉我。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微攥着微化的糖，身形前倾，语气急切而克制；沈靖的手僵在半空，脸上的慈爱凝住，烛光映出他骤然警觉的眼神。"
+    },
+    {
+      "scene_id": "E2S03",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "他报了个数。不够。我又问了田庄、铺子、母亲压箱底的首饰。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "桌上摊着账纸与烛台，沈明微低头快速盘算，眉心越蹙越紧；沈靖站在一旁，听她追问田庄铺子，神色从疑惑转为不安。"
+    },
+    {
+      "scene_id": "E2S04",
+      "plan_duration": 3,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈靖",
+          "text": "你欠债了？"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "我要买粮。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈靖猛地俯身盯住女儿，压低声音追问；沈明微抬起脸，眼神清亮坚定，轻轻摇头，窗外院中争执声仿佛一瞬停住。"
+    },
+    {
+      "scene_id": "E2S05",
+      "plan_duration": 5,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈家兄长",
+          "text": "谁要造反？"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "房门被推开，沈家兄长抱着弓踏进来，半是玩笑半是试探地看向屋内二人；沈明微抓起软枕砸过去，他侧身躲开，笑意明朗，闺房紧绷气氛短暂松动。"
+    },
+    {
+      "scene_id": "E2S06",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "那笑声让我鼻子又酸了一回。我不敢说自己死过一次。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微望着兄长的笑，眼底迅速泛红，却强行压下泪意；她垂眸把情绪藏回阴影里，父兄在烛光中并肩站着，像她不敢触碰的温暖。"
+    },
+    {
+      "scene_id": "E2S07",
+      "plan_duration": 5,
+      "formal_duration": 10,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "我只能将记得的事拆开说。北境春寒，漕运容易迟。户部新换的几家粮商，背后的东家与陆尚书有牵连。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微把一封北境军报按在桌案上，指尖沿着边关路线缓慢划过；沈靖神色凝重，沈家兄长收起笑意，屋内只剩烛火噼啪。"
+    },
+    {
+      "scene_id": "E2S08",
+      "plan_duration": 5,
+      "formal_duration": 10,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "仓粮若出了问题，军中便会断供。这些事，有的眼下已露端倪，有的还要再过半年才会发生。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "桌面铺开军需文书与封存原令，沈明微一页页摊开，神情冷静近乎锋利；父兄沉默听着，窗纸外夜色沉沉，北境危机仿佛压进这间小屋。"
+    },
+    {
+      "scene_id": "E2S09",
+      "plan_duration": 5,
+      "formal_duration": 12,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "我不能把它们当成已经发生的罪证。但可以买粮，可以留人，可以把原本只存一份的军需回执，抄出第二份。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微将银票、空白回执与封存原令分成数叠，动作果断；她没有抬头，烛光照在她苍白而坚定的侧脸上。"
+    },
+    {
+      "scene_id": "E2S10",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈靖",
+          "text": "你娘说，这只不好看，让我重打。可金子实在，急时能当钱。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈靖沉默许久，弯腰从床底拾起金镯子，用袖口仔细擦去灰尘，再郑重放进沈明微掌心；沈明微低头看着那只沉甸甸的镯子，眼中水光闪动。"
+    },
+    {
+      "scene_id": "E2S11",
+      "plan_duration": 5,
+      "formal_duration": 12,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈靖",
+          "text": "田不卖。田是退路。现银拿去用，粮分几处买，别叫一家商号掐住了脖子。"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈家兄长",
+          "text": "北边的事有我。你在宫里，不必事事替我们撑着。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈靖站直身子，面色沉稳如山，指向桌上银票；沈家兄长抱弓立在门边，笑意尽敛，眼神坚定地看向妹妹。"
+    },
+    {
+      "scene_id": "E2S12",
+      "plan_duration": 5,
+      "formal_duration": 10,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "我看着他们，突然明白了一件事。前世不是无人护我。是我把他们递过来的手，一次次推开了。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微紧握金镯子，抬头看着父亲与兄长，泪意终于漫上眼眶；两人站在她面前，像一双终于被她看见的手，屋内暖光柔和却沉重。"
+    },
+    {
+      "scene_id": "E2S13",
+      "plan_duration": 5,
+      "formal_duration": 10,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "次日，仪仗来迎。母亲替我戴好凤冠，又低头检查我的袖口。那上头绣着一双燕子。两只都是两条腿。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "次日晨光透入闺房，沈夫人替盛装的沈明微戴正凤冠步摇，又低头细细检查袖口；袖上两只燕子针脚清晰，皆完整成双。"
+    },
+    {
+      "scene_id": "E2S14",
+      "plan_duration": 5,
+      "formal_duration": 10,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈夫人",
+          "text": "都要做皇后了，怎么反而黏人？"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "娘，往后无论宫里传出什么话，你都先信我。"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈夫人",
+          "text": "是出了什么事？"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微忽然握住沈夫人的手不肯放，指节用力到发白；沈夫人先是含笑打趣，随即察觉女儿神色异常，笑容一点点收住。"
+    },
+    {
+      "scene_id": "E2S15",
+      "plan_duration": 5,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "等我回家，再告诉你。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "院外迎亲礼仗影影绰绰，催促声透过门帘传来；沈明微把母亲的手贴到自己脸侧，像幼时受委屈般轻轻蹭了一下，眼中有不舍也有决绝。"
+    },
+    {
+      "scene_id": "E2S16",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "那日，我的嫁妆少了六箱珠宝。多出来的银票，被分作几份，送往北上的粮道。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "北上粮道风尘漫卷，几队车马分道疾行，押车人将封好的银票与粮契藏入衣襟；镜头掠过空出的嫁妆箱与远去的车辙，珠宝不见，粮路已开。"
+    },
+    {
+      "scene_id": "E2S17",
+      "plan_duration": 5,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "萧承煜",
+          "text": "舍不得家？"
+        },
+        {
+          "kind": "dialogue",
+          "speaker": "沈明微",
+          "text": "嗯。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "新婚夜红烛高燃，萧承煜缓缓掀起沈明微的盖头；她眼眶泛红，妆容端庄却藏着冷意，萧承煜伸手欲替她拭泪。"
+    },
+    {
+      "scene_id": "E2S18",
+      "plan_duration": 5,
+      "formal_duration": 5,
+      "utterances": [
+        {
+          "kind": "dialogue",
+          "speaker": "萧承煜",
+          "text": "往后这里便是你的家。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "沈明微垂眼避开萧承煜的手，红烛映在她平静的睫影上；萧承煜温柔俯身，语气像安抚也像圈禁，宫殿深处的阴影压近。"
+    },
+    {
+      "scene_id": "E2S19",
+      "plan_duration": 5,
+      "formal_duration": 8,
+      "utterances": [
+        {
+          "kind": "voiceover",
+          "speaker": null,
+          "text": "如今，我只看见他手指上的玉扳指。玉质很好。是陆尚书进的。"
+        }
+      ],
+      "speech_unchanged": true,
+      "plan_continuity": false,
+      "scene_description": "极近景定格在萧承煜手指上的玉扳指，玉质温润却泛着冷光；沈明微的目光落在扳指上，眸色骤然冰冷，红帐喜烛在她眼中变成暗伏的杀机。"
+    }
+  ],
+  "plan_total": 93,
+  "formal_total": 152,
+  "protected_sha256": {
+    "D:\\projects\\SELF\\zero evo\\ArcReel\\deploy\\projects\\proj-8fbe5aa8\\project.json": "1924b64cd62cb5993121c6b1b8c9645d82ad979f321c1c92f5d31103437110c8",
+    "D:\\projects\\SELF\\zero evo\\ArcReel\\deploy\\projects\\proj-8fbe5aa8\\scripts\\episode_2.json": "98d5aa3f991b8cfe4eb6ae26467b9a81cef8dc5935cec6f50e84820fc034a8c4",
+    "D:\\projects\\SELF\\zero evo\\ArcReel\\deploy\\projects\\proj-8fbe5aa8\\drafts\\episode_2\\script_plan_normalized_script.json": "16c54d03f92ad7fa4d152270d319f9493cde5ad3ccdf3908c6e4e9ac7e6ba61d",
+    "D:\\projects\\SELF\\zero evo\\ArcReel\\deploy\\projects\\proj-8fbe5aa8\\source\\episode_2.txt": "719bce43e21bea2c1cb59da149f98ef67cd1b683c498efd5e96e3a169082ded5"
+  }
+}

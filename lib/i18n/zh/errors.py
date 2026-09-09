@@ -1,4 +1,8 @@
 MESSAGES = {
+    "motion_plan_review_required": "首尾帧动作与空间衔接需要复核，尚未提交视频生成：{details}",
+    "motion_output_review_required": "视频抽帧检查未通过，结果已保留在历史版本，未写为当前视频：{details}",
+    "motion_requires_vision": "动作衔接检查需要支持图片输入的剧本文字模型，请检查模型配置",
+    "motion_duration_insufficient": "动作预计至少需要 {required} 秒，当前只有 {available} 秒，请拆镜或重新规划",
     "codex_history_unavailable": "无法确认原对话的运行引擎，请新建对话以使用 Codex",
     "codex_reasoning_effort_unsupported": "所选 Codex 模型不支持此推理强度",
     "codex_unavailable": "无法启动 Codex，请检查本机安装或 ARCREEL_CODEX_BIN 配置",

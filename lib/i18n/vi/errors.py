@@ -1,4 +1,8 @@
 MESSAGES = {
+    "motion_plan_review_required": "Cần kiểm tra chuyển động và tính liên tục không gian giữa các khung hình; chưa gửi yêu cầu tạo video: {details}",
+    "motion_output_review_required": "Kiểm tra các khung hình video không đạt. Kết quả được lưu trong lịch sử, chưa chọn làm video hiện tại: {details}",
+    "motion_requires_vision": "Kiểm tra tính liên tục cần mô hình kịch bản hỗ trợ đầu vào hình ảnh. Hãy kiểm tra cấu hình mô hình.",
+    "motion_duration_insufficient": "Hành động cần ít nhất {required} giây nhưng chỉ có {available} giây. Hãy chia hoặc lập lại kế hoạch cảnh quay.",
     "codex_history_unavailable": "Không thể khôi phục công cụ chạy cuộc trò chuyện gốc. Hãy tạo cuộc trò chuyện mới để dùng Codex.",
     "codex_reasoning_effort_unsupported": "Mô hình Codex đã chọn không hỗ trợ mức suy luận này.",
     "codex_unavailable": "Không thể khởi động Codex. Kiểm tra cài đặt hoặc ARCREEL_CODEX_BIN.",

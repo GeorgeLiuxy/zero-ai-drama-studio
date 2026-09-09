@@ -50,6 +50,7 @@ from lib.reference_catalog import build_reference_catalog
 from lib.resource_paths import resource_relative_path
 from lib.script_models import get_generated_assets, resolve_content_mode
 from lib.script_skeleton import ensure_route_skeleton
+from lib.shot_continuity import grid_continuity_context
 from lib.storyboard_sequence import get_storyboard_items, group_scenes_by_segment_break
 from server.media_tools.context import (
     ToolContext,
@@ -334,6 +335,7 @@ async def handle_generate_grid(
                     continue
                 prompt = build_grid_prompt(
                     scenes=chunk,
+                    continuity_reference=grid_continuity_context(items, chunk_ids),
                     id_field=id_field,
                     rows=layout.rows,
                     cols=layout.cols,

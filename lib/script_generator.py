@@ -120,6 +120,7 @@ from lib.script_review import (
     migrate_script_plan_draft_in_place,
 )
 from lib.script_skeleton import resolve_declared_kind, resolve_kind_items, rewrite_episode_prefix
+from lib.shot_continuity import continuity_context
 from lib.speech_composition import admit_script_unit, require_script_unit_admitted, video_unit_replan_problems
 from lib.speech_rate import project_speech_rate_override
 from lib.text_backends.base import DEFAULT_MAX_OUTPUT_TOKENS, TextGenerationRequest, TextTaskType
@@ -723,7 +724,9 @@ class ScriptGenerator:
         result = await self._generate_text(
             TextGenerationRequest(
                 prompt=append_user_instructions(
-                    self._build_drama_prompt_authoring_prompt(authoring_scope.entries_to_rewrite, episode),
+                    self._build_drama_prompt_authoring_prompt(
+                        authoring_scope.entries_to_rewrite, episode, all_scenes=content_scenes
+                    ),
                     instructions,
                 ),
                 response_schema=DramaVisualScript,
@@ -788,7 +791,9 @@ class ScriptGenerator:
                 "当前分辨率与型号下这些时长不可用，请调用 generate_script_plan 按当前能力规范化"
             )
 
-    def _build_drama_prompt_authoring_prompt(self, content_scenes: list, episode: int) -> str:
+    def _build_drama_prompt_authoring_prompt(
+        self, content_scenes: list, episode: int, *, all_scenes: list | None = None
+    ) -> str:
         """构建 drama prompt_authoring（视觉层）prompt：把 script_plan 内容渲染为输入，仅求 image_prompt / video_prompt。"""
         characters = self.project_json.get("characters")
         characters = characters if isinstance(characters, dict) else {}
@@ -796,7 +801,7 @@ class ScriptGenerator:
         scenes = scenes if isinstance(scenes, dict) else {}
         props = self.project_json.get("props")
         props = props if isinstance(props, dict) else {}
-        return build_drama_prompt(
+        prompt = build_drama_prompt(
             project_overview=self.project_json.get("overview", {}),
             style=self.project_json.get("style", ""),
             style_description=self.project_json.get("style_description", ""),
@@ -809,6 +814,21 @@ class ScriptGenerator:
             scenes=scenes,
             props=props,
         )
+        # Full episode facts remain read-only context during a selected rewrite.
+        # Existing visual descriptions help keep the unselected neighboring camera positions.
+        context_scenes = [dict(scene) for scene in (all_scenes or content_scenes) if isinstance(scene, dict)]
+        formal_path = self.project_path / "scripts" / episode_script_filename(episode)
+        if formal_path.is_file():
+            formal = json.loads(formal_path.read_text(encoding="utf-8"))
+            current_by_id = {s.get("scene_id"): s for s in formal.get("scenes", []) if isinstance(s, dict)}
+            target_ids = {s["scene_id"] for s in content_scenes}
+            for scene in context_scenes:
+                if scene.get("scene_id") in target_ids:
+                    continue
+                for key in ("image_prompt", "video_prompt"):
+                    if key in current_by_id.get(scene.get("scene_id"), {}):
+                        scene[key] = current_by_id[scene.get("scene_id")][key]
+        return prompt + continuity_context(context_scenes, [s["scene_id"] for s in content_scenes])
 
     def _parse_drama_visual(self, response_text: str) -> list[dict]:
         """解析 prompt_authoring 视觉层 LLM 响应为 scene 视觉 dict 列表（scene_id + image_prompt + video_prompt）。
@@ -1066,7 +1086,8 @@ class ScriptGenerator:
             if drama_entries is None:
                 return _NO_ENTRY_TO_REWRITE_NOTE
             return append_user_instructions(
-                self._build_drama_prompt_authoring_prompt(drama_entries, episode), instructions
+                self._build_drama_prompt_authoring_prompt(drama_entries, episode, all_scenes=content_scenes),
+                instructions,
             )
 
         caps = await self._fetch_video_capabilities()

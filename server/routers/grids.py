@@ -37,6 +37,7 @@ from lib.image_utils import MAX_UPLOAD_PIXELS, ImagePixelLimitError, normalize_s
 from lib.json_io import domain_error_on_value_error
 from lib.project_change_hints import project_change_source
 from lib.project_manager import get_project_manager
+from lib.shot_continuity import grid_continuity_context
 from lib.storyboard_sequence import get_storyboard_items, group_scenes_by_segment_break
 from lib.version_manager import VersionManager
 from server.auth import CurrentUser
@@ -186,6 +187,7 @@ async def generate_grid(
 
             prompt = build_grid_prompt(
                 scenes=chunk,
+                continuity_reference=grid_continuity_context(items, chunk_ids),
                 id_field=id_field,
                 rows=chunk_layout.rows,
                 cols=chunk_layout.cols,

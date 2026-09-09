@@ -4,7 +4,7 @@
   "meta": {
     "name": "AutoDL Wan2.2 I2V",
     "author": "ArcReel",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "hints": {
       "suggested_models": [
         {
@@ -21,6 +21,11 @@
   "inputs": {
     "first_frame": {
       "source": "start_image",
+      "encoding": "data_uri",
+      "required": true
+    },
+    "last_frame": {
+      "source": "end_image",
       "encoding": "data_uri"
     }
   },
@@ -35,7 +40,8 @@
       "duration": "{{ duration }}",
       "n": 1,
       "seed": "{{ seed }}",
-      "image": "{{ inputs.first_frame }}"
+      "image": "{{ inputs.first_frame }}",
+      "end_image": "{{ inputs.last_frame }}"
     },
     "extract": {
       "task_id": [
@@ -85,7 +91,13 @@
     "expired": "failed"
   },
   "capabilities": {
+    "text_to_video": false,
     "first_frame": true,
-    "max_reference_images": 0
+    "last_frame": true,
+    "max_reference_images": 0,
+    "audio_track": "always_off",
+    "reference_audio_mode": "none",
+    "max_reference_audio_count": 0,
+    "max_prompt_chars": 6000
   }
 }

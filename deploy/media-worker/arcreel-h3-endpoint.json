@@ -1,0 +1,51 @@
+{
+  "kind": "declarative",
+  "schema_version": "1.0.0",
+  "meta": {
+    "name": "AutoDL H3 I2V with native audio",
+    "author": "ArcReel",
+    "version": "1.1.0",
+    "hints": {"suggested_models": [{"id": "h3-i2v-int8"}]}
+  },
+  "auth": {"headers": {"Authorization": "Bearer {{ api_key }}"}},
+  "inputs": {
+    "first_frame": {
+      "source": "start_image", "encoding": "data_uri", "required": true
+    },
+    "last_frame": {
+      "source": "end_image", "encoding": "data_uri", "required": false
+    }
+  },
+  "submit": {
+    "method": "POST",
+    "url": "{{ base_url }}/v1/video/generations",
+    "body": {
+      "model": "{{ model }}", "prompt": "{{ prompt }}",
+      "width": "{{ width }}", "height": "{{ height }}",
+      "duration": "{{ duration }}", "n": 1, "seed": "{{ seed }}",
+      "generate_audio": "{{ generate_audio }}", "image": "{{ inputs.first_frame }}",
+      "end_image": "{{ inputs.last_frame }}"
+    },
+    "extract": {
+      "task_id": ["$.task_id"],
+      "error": ["$.error.message", "$.error", "$.detail", "$.message"]
+    }
+  },
+  "poll": {
+    "method": "GET",
+    "url": "{{ base_url }}/v1/video/generations/{{ task_id }}",
+    "extract": {
+      "status": ["$.status"],
+      "video_url": ["$.url"],
+      "error": ["$.error.message", "$.error", "$.detail"],
+      "usage": {"duration_seconds": {"paths": ["$.metadata.duration"], "accept": "scalar"}}
+    }
+  },
+  "status_map": {"expired": "failed"},
+  "capabilities": {
+    "text_to_video": false, "first_frame": true, "last_frame": true,
+    "max_reference_images": 0, "audio_track": "always_on",
+    "reference_audio_mode": "none", "max_reference_audio_count": 0,
+    "max_prompt_chars": 6000
+  }
+}

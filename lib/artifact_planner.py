@@ -49,6 +49,7 @@ from lib.project_migration_report import MigrationSkippedArtifact
 from lib.project_schema import CURRENT_PROJECT_SCHEMA_VERSION, parse_project_schema_version, project_schema_is_current
 from lib.resource_paths import resource_relative_path
 from lib.script_editor import resolve_items
+from lib.shot_continuity import grid_continuity_context
 from lib.speech_artifact_provenance import RenditionVariant, SelectedMediaEvidence, media_content_digest
 from lib.speech_composition import (
     SpeechComposition,
@@ -767,6 +768,7 @@ class TargetStatePlanner:
             try:
                 basis = build_grid_composite_visual_basis(
                     group_id=grid.id,
+                    continuity_reference=grid_continuity_context(episode.items, grid.scene_ids),
                     members=members,
                     rows=grid.rows,
                     columns=grid.cols,

@@ -110,6 +110,7 @@ from lib.schema_guards import is_int
 from lib.script_editor import resolve_items
 from lib.script_models import resolve_content_mode
 from lib.script_skeleton import SKELETON_ENTITY_TYPES, SKELETON_ITEM_LABEL_KEYS, resolve_script_kind
+from lib.shot_continuity import grid_continuity_context, require_continuity, strict_motion_review_enabled
 from lib.speech_artifact_provenance import build_video_duration_basis
 from lib.speech_composition import SpeechAdmissionError, admit_script_unit
 from lib.storyboard_sequence import (
@@ -143,6 +144,7 @@ from server.services.image_artifact_currency import (
     SelectedImageArtifactReceipt,
     reject_failed_image_selection,
 )
+from server.services.motion_planning import apply_motion_plan, prepare_motion_plan, record_task_motion
 from server.services.narration_delivery_tasks import (
     CurrentTtsSettingsResolver,
     ResolvedTtsSettingsResolver,
@@ -2329,6 +2331,7 @@ async def execute_video_task(
     if prompt is None:
         raise ValueError("current script unit is missing video_prompt")
     requested_visual_prompt = copy.deepcopy(prompt)
+    execution_visual_prompt = requested_visual_prompt
     delivery_options = NarrationDeliveryRequestOptions.from_payload(payload)
     # lane 归桶按项目生成模式求值，与提交入口（``generate_video``）同源：入口挡掉参考生视频后
     # 到达这里的项目恒为 i2v，但桶不在两处各硬编码一次，避免生成模式口径分叉。
@@ -2366,10 +2369,18 @@ async def execute_video_task(
     )
     aspect_ratio = get_aspect_ratio(project, "videos")
     seed = payload.get("seed")
+    motion_planning_enabled = (
+        task_id is not None
+        and model_name == "h3-i2v-int8"
+        and (end_image is not None or item.get("continuity") is not None)
+    )
+    motion_planning_enabled = motion_planning_enabled and strict_motion_review_enabled()
+    if motion_planning_enabled and item.get("continuity") is not None:
+        require_continuity([entry for entry in _script.get("scenes", []) if isinstance(entry, dict)])
 
     def _visual_basis_digest_for(storyboard_image: Path, end_frame_image: Path | None) -> str:
         return build_storyboard_video_visual_basis(
-            prompt=requested_visual_prompt,
+            prompt=execution_visual_prompt,
             storyboard_image=storyboard_image,
             end_frame_image=end_frame_image,
             aspect_ratio=aspect_ratio,
@@ -2510,7 +2521,7 @@ async def execute_video_task(
     assert_duration_supported(duration_seconds, supported_durations)
     duration_seconds = int(float(duration_seconds))
 
-    if delivery_projection is not None:
+    if delivery_projection is not None and not motion_planning_enabled:
         if not is_int(duration_seconds):
             raise RuntimeError("allowed TTS video projection produced a non-integer request duration")
         narration_actual_duration = delivery_projection.narration.actual_duration_seconds
@@ -2599,12 +2610,34 @@ async def execute_video_task(
                 if staged_end is not None
                 else None
             )
+            if motion_planning_enabled:
+                motion_plan, motion_report = await prepare_motion_plan(
+                    project_path=project_path,
+                    project_name=project_name,
+                    item=item,
+                    items=[entry for entry in _script.get("scenes", []) if isinstance(entry, dict)],
+                    first_frame=provider_start_image,
+                    last_frame=provider_end_image,
+                    duration_seconds=duration_seconds,
+                    aspect_ratio=aspect_ratio,
+                )
+                execution_visual_prompt = apply_motion_plan(requested_visual_prompt, motion_plan)
+                prompt_text = render_storyboard_video_prompt(
+                    execution_visual_prompt,
+                    item,
+                    content_mode=content_mode,
+                    voice_characters=None if ctx.video.is_silent else (project.get("characters") or {}),
+                )
+                await asyncio.to_thread(
+                    record_task_motion, project_path, task_id, motion_report, provider_start_image, provider_end_image
+                )
             visual_basis_digest = await asyncio.to_thread(
                 _visual_basis_digest_for, provider_start_image, provider_end_image
             )
             artifact_visual_basis = await asyncio.to_thread(
                 lambda: build_storyboard_video_artifact_visual_basis(
                     resource_id=resource_id,
+                    continuity=item.get("continuity"),
                     visual_prompt=requested_visual_prompt,
                     storyboard_image=provider_start_image,
                     end_frame_image=provider_end_image,
@@ -3254,6 +3287,7 @@ async def execute_grid_task(
         grid_aspect_ratio = grid_aspect_ratio_for(grid.rows, grid.cols, member_aspect_ratio)
         prompt_text = build_grid_prompt(
             scenes=[item_by_id[scene_id] for scene_id in grid.scene_ids],
+            continuity_reference=grid_continuity_context(items, grid.scene_ids),
             id_field=id_field,
             rows=grid.rows,
             cols=grid.cols,
@@ -3263,6 +3297,7 @@ async def execute_grid_task(
         )
         grid_basis = build_grid_composite_visual_basis(
             group_id=grid.id,
+            continuity_reference=grid_continuity_context(items, grid.scene_ids),
             members=members,
             rows=grid.rows,
             columns=grid.cols,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from contextlib import asynccontextmanager, contextmanager, suppress
 from copy import deepcopy
 from pathlib import Path
@@ -18,6 +19,7 @@ from lib.artifact_manifest import (
 )
 from lib.generation_queue import CompensableGenerationResult
 from lib.narration_delivery import TtsSynthesisSettings, build_narration_audio_basis
+from lib.project_manager import ProjectManager
 from lib.reference_video.execution_checkpoint import NarrationExecutionFacts
 from lib.reference_video.request_projection import (
     FilesystemReferenceAssets,
@@ -40,6 +42,7 @@ from lib.visual_artifact_provenance import (
 )
 from server.services import video_artifact_currency
 from server.services.artifact_version_restore import is_typed_media_version_restorable
+from server.services.motion_planning import task_motion_path
 from server.services.video_artifact_currency import (
     VideoArtifactCommitter,
     build_current_video_artifact_basis,
@@ -79,6 +82,42 @@ def _currency(
         reference_image_limit=None,
         parent_version=parent_version,
     )
+
+
+async def test_unverifiable_motion_review_keeps_paid_bytes_in_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ARCREEL_STRICT_MOTION_REVIEW", "true")
+    project_path = tmp_path / "demo"
+    project_path.mkdir()
+    staged = project_path / "paid.mp4"
+    staged.write_bytes(b"paid-result")
+    current = project_path / "videos" / "E1S01.mp4"
+    current.parent.mkdir()
+    current.write_bytes(b"existing-selected-video")
+    pointer = task_motion_path(project_path, "motion-task")
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(json.dumps({"task_id": "motion-task", "plan_report": "missing-evidence.json"}), encoding="utf-8")
+    versions = VersionManager(project_path)
+    committer = VideoArtifactCommitter(
+        project_manager=ProjectManager(str(tmp_path)),
+        project_name="demo",
+        project_path=project_path,
+        versions=versions,
+        resource_type="videos",
+        resource_id="E1S01",
+        prompt="planned motion",
+    )
+    metadata = {"execution_task_id": "motion-task", "artifact_video_currency": _currency("E1S01").to_dict()}
+    await committer.prepare_selection(staged, 8, metadata)
+    assert committer.selection_error is not None
+    outcome = committer(staged, current, 8, metadata)
+    assert outcome.selected is False
+    assert current.read_bytes() == b"existing-selected-video"
+    entry = next(v for v in versions.get_versions("videos", "E1S01")["versions"] if v["version"] == outcome.version)
+    assert entry is not None
+    assert entry[VIDEO_ARTIFACT_RESTORE_BLOCKER_FIELD] == "motion_output_review_required"
+    assert (project_path / entry["file"]).read_bytes() == b"paid-result"
 
 
 @pytest.mark.asyncio

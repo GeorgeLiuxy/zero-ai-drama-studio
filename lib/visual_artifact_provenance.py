@@ -19,6 +19,7 @@ from lib.grid.prompt_builder import project_grid_image_prompt
 from lib.prompt_utils import normalize_style, project_storyboard_image_prompt
 from lib.reference_video.request_projection import ResolvedReferenceAsset
 from lib.reference_video.text_parser import strip_speech_marks
+from lib.shot_continuity import ShotContinuity
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +193,7 @@ def build_grid_composite_visual_basis(
     style: str,
     grid_aspect_ratio: str,
     references: Sequence[VisualReference] = (),
+    continuity_reference: str = "",
 ) -> ArtifactBasis:
     """Describe one grid composite without hashing its rendered provider prompt."""
 
@@ -210,6 +212,7 @@ def build_grid_composite_visual_basis(
             },
             "style": style,
             "references": _reference_evidence(references),
+            **({"continuity_reference": continuity_reference} if continuity_reference else {}),
         },
     )
 
@@ -308,6 +311,7 @@ def build_storyboard_video_artifact_visual_basis(
     storyboard_image: Path,
     end_frame_image: Path | None,
     aspect_ratio: str,
+    continuity: object = None,
 ) -> ArtifactBasis:
     """Describe the visual component of one storyboard-driven video.
 
@@ -342,6 +346,9 @@ def build_storyboard_video_artifact_visual_basis(
             "visual_prompt": projected_prompt,
             "canvas": {"aspect_ratio": _require_non_empty("aspect_ratio", aspect_ratio)},
             "frames": frame_evidence,
+            **(
+                {"continuity": ShotContinuity.model_validate(continuity).model_dump()} if continuity is not None else {}
+            ),
         },
     )
 

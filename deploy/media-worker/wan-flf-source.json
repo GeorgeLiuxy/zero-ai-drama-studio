@@ -1,0 +1,10 @@
+{
+  "workflow_revision": "7c25a3c586484601f94b7e8f8b14c23b2c95a096",
+  "comfyui_revision": "5bbdf8a76678e2c7cfb519a49a9c3a7137fd6280",
+  "source_url": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/7c25a3c586484601f94b7e8f8b14c23b2c95a096/templates/video_wan2_2_14B_flf2v.json",
+  "upstream_sha256": "9fb579e07caff9081c14a4c0e3b983e210aa7d976f83f1c2758d2ad6ed949fdf",
+  "workflow_sha256": "dd1950cc174a461c38f277e909da07797d93041b4f424a5c5586271514ed18b8",
+  "branch": "standard 20 steps, CFG 4, shift 8; no Turbo LoRA",
+  "adaptation": "Existing gateway node IDs, request prompt, 16 fps, existing MP4 save node. Same four model files.",
+  "gpu_tested": false
+}
